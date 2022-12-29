@@ -9,11 +9,10 @@ use jsonwebtoken::{
     Validation,
 };
 use serde::{Deserialize, Serialize};
-use sodiumoxide::crypto::pwhash::argon2id13;
 
 use crate::models::user::Role;
 
-pub fn create_jwt(uid: &str, role: &Role) -> Result<String, JSONError> {
+pub async fn create_jwt(uid: &str, role: &Role) -> Result<String, JSONError> {
     let binding = get_jwt_secret();
     let secret = binding.as_bytes();
     let expiration = Utc::now()
@@ -59,27 +58,5 @@ impl Claims {
             role: role.to_string(),
             exp: exp.to_owned(),
         }
-    }
-}
-
-pub fn hash(password: &str) -> (String, argon2id13::HashedPassword) {
-    sodiumoxide::init().unwrap();
-
-    let hash = argon2id13::pwhash(
-        password.as_bytes(),
-        argon2id13::OPSLIMIT_INTERACTIVE,
-        argon2id13::MEMLIMIT_INTERACTIVE,
-    )
-    .unwrap();
-
-    let texthash = std::str::from_utf8(&hash.0).unwrap().to_string();
-    (texthash, hash)
-}
-
-pub fn verify(hash: [u8; 128], passwd: &str) -> bool {
-    sodiumoxide::init().unwrap();
-    match argon2id13::HashedPassword::from_slice(&hash) {
-        Some(hp) => argon2id13::pwhash_verify(&hp, passwd.as_bytes()),
-        _ => false,
     }
 }
