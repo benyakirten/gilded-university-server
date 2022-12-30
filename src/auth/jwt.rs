@@ -1,6 +1,7 @@
 use std::{
     env,
     io::{Error, ErrorKind},
+    str::FromStr,
 };
 
 use chrono::{Duration, Utc};
@@ -33,7 +34,7 @@ pub fn authorize(role: &Role, token: &str) -> Result<String, Error> {
     )
     .map_err(|_| ErrorKind::Other)?;
 
-    let decoded_role = Role::from_str(&decoded.claims.role);
+    let decoded_role = Role::from_str(&decoded.claims.role).unwrap_or(Role::Guest);
     match decoded_role.meets_requirements(role) {
         true => Ok(decoded.claims.sub),
         false => Err(ErrorKind::PermissionDenied.into()),
