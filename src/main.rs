@@ -24,7 +24,9 @@ async fn main() {
         .await
         .expect("Unable to establish connection to database");
     let connection = Arc::new(connection);
-    let state = warp::any().map(move || Context::new(connection));
+    let state = warp::any().map(move || Context {
+        connection: connection.clone(),
+    });
     let graphql_filter = juniper_warp::make_graphql_filter(create_schema(), state.boxed());
 
     warp::serve(

@@ -11,12 +11,6 @@ pub struct Context {
     pub connection: Arc<DatabaseConnection>,
 }
 
-impl Context {
-    fn new(connection: Arc<DatabaseConnection>) {
-        Context { connection }
-    }
-}
-
 pub fn create_schema() -> Schema {
     Schema::new(QueryRoot, MutationRoot, EmptySubscription::<Context>::new())
 }

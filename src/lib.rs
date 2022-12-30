@@ -2,9 +2,9 @@ use std::env;
 
 use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 
-use migration::{Migrator, MigratorTrait};
+use migration::{DbErr, Migrator, MigratorTrait};
 
-pub async fn connect_to_database() -> Result<DatabaseConnection> {
+pub async fn connect_to_database() -> Result<DatabaseConnection, DbErr> {
     let uri = get_env("DATABASE_URL");
     let opt = ConnectOptions::new(uri);
     // Connections options can be inserted
