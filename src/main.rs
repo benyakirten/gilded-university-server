@@ -1,5 +1,6 @@
+use std::sync::Arc;
+
 use dotenvy::dotenv;
-use gilded_university_server::connect_to_database;
 use warp::{http::Response, Filter};
 
 mod auth;
@@ -7,10 +8,11 @@ mod graphql;
 mod models;
 
 use crate::graphql::schema::{create_schema, Context};
+use gilded_university_server::connect_to_database;
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
+    dotenv().expect(".env environment file not found");
     let homepage = warp::path::end().map(|| {
         Response::builder()
             .header("content-type", "text/html")
@@ -19,10 +21,11 @@ async fn main() {
             )
     });
 
-    let connection = connect_to_database().await;
-    let state = warp::any().map(move || Context {
-        connection: connection.clone(),
-    });
+    let connection = connect_to_database()
+        .await
+        .expect("Unable to establish connection to database");
+    let connection = Arc::new(connection);
+    let state = warp::any().map(move || Context::new(connection));
     let graphql_filter = juniper_warp::make_graphql_filter(create_schema(), state.boxed());
 
     warp::serve(
