@@ -10,7 +10,7 @@ use jsonwebtoken::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::models::user::Role;
+use ::entity::sea_orm_active_enums::Role;
 
 pub async fn create_jwt(uid: &str, role: &Role) -> Result<String, JSONError> {
     let binding = get_jwt_secret();
