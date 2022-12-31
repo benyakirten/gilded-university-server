@@ -4,7 +4,10 @@ use juniper::{graphql_object, FieldResult, GraphQLObject};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, Set};
 
 use crate::{
-    auth::{hash::hash, jwt::create_jwt},
+    auth::{
+        hash::{hash, verify},
+        jwt::create_jwt,
+    },
     graphql::schema::Context,
 };
 use entity::{
@@ -15,14 +18,13 @@ use entity::{
 
 #[derive(GraphQLObject)]
 pub struct AuthResponse {
-    pass: String,
+    // TODO: Add refresh token
     token: String,
 }
 
 impl AuthResponse {
-    fn new(pass: &str, token: &str) -> Self {
+    fn new(token: &str) -> Self {
         AuthResponse {
-            pass: pass.to_string(),
             token: token.to_string(),
         }
     }
@@ -65,7 +67,7 @@ impl MutationRoot {
 
         let id = res.last_insert_id;
         let token = create_jwt(&id, &Role::Guest)?;
-        Ok(AuthResponse::new(&pass, &token))
+        Ok(AuthResponse::new(&token))
     }
 
     async fn signin(ctx: &Context, email: String, password: String) -> FieldResult<AuthResponse> {
@@ -77,8 +79,7 @@ impl MutationRoot {
 
         match found {
             Some(found) => {
-                let password = hash(&password)?;
-                if found.password != password {
+                if !verify(&password, &found.password) {
                     return Err(ErrorKind::ConnectionRefused.into());
                 }
 
@@ -87,7 +88,7 @@ impl MutationRoot {
                 let found: user::Model = User::update(found).exec(conn).await?;
 
                 let token = create_jwt(&found.id, &found.role)?;
-                Ok(AuthResponse::new(&found.password, &token))
+                Ok(AuthResponse::new(&token))
             }
             None => Err(ErrorKind::NotFound.into()),
         }

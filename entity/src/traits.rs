@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use sea_orm::prelude::Uuid;
 use sea_orm::ActiveValue;
 
 use crate::sea_orm_active_enums::{Role, Status};
@@ -57,7 +58,7 @@ impl Status {
 impl User {
     pub fn create_active_model(email: &str, name: &str, password: &str) -> ActiveModel {
         ActiveModel {
-            id: ActiveValue::NotSet,
+            id: ActiveValue::Set(Uuid::new_v4()),
             email: ActiveValue::Set(email.to_string()),
             name: ActiveValue::Set(name.to_string()),
             password: ActiveValue::Set(password.to_string()),
