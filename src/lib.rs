@@ -15,5 +15,5 @@ pub async fn connect_to_database() -> Result<DatabaseConnection, DbErr> {
 }
 
 pub fn get_env(key: &str) -> String {
-    env::var(key).expect(format!("{} environment variable is not defined", key).as_str())
+    env::var(key).unwrap_or_else(|_| panic!("{} environment variable is not defined", key))
 }

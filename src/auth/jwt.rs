@@ -1,5 +1,4 @@
 use std::{
-    env,
     io::{Error, ErrorKind},
     str::FromStr,
 };
@@ -13,9 +12,10 @@ use sea_orm::prelude::Uuid;
 use serde::{Deserialize, Serialize};
 
 use entity::sea_orm_active_enums::Role;
+use gilded_university_server::get_env;
 
 pub fn create_jwt(uid: &Uuid, role: &Role) -> Result<String, JSONError> {
-    let binding = get_jwt_secret();
+    let binding = get_env("JWT_SECRET");
     let secret = binding.as_bytes();
     let expiration = Utc::now()
         .checked_add_signed(Duration::seconds(60))
@@ -31,7 +31,7 @@ pub fn create_jwt(uid: &Uuid, role: &Role) -> Result<String, JSONError> {
 pub fn authorize(role: &Role, token: &str) -> Result<Uuid, Error> {
     let decoded = decode::<Claims>(
         token,
-        &DecodingKey::from_secret(get_jwt_secret().as_bytes()),
+        &DecodingKey::from_secret(get_env("JWT_SECRET").as_bytes()),
         &Validation::new(Algorithm::HS512),
     )
     .map_err(|_| ErrorKind::Other)?;
@@ -41,10 +41,6 @@ pub fn authorize(role: &Role, token: &str) -> Result<Uuid, Error> {
         true => Ok(decoded.claims.sub),
         false => Err(ErrorKind::PermissionDenied.into()),
     }
-}
-
-fn get_jwt_secret() -> String {
-    env::var("JWT_SECRET").expect("JWT_SECRET environment variable not found")
 }
 
 #[derive(Debug, Deserialize, Serialize)]
