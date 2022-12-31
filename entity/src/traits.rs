@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use sea_orm::{prelude::Uuid, ActiveValue};
+use sea_orm::ActiveValue;
 
 use crate::sea_orm_active_enums::{Role, Status};
 use crate::{prelude::User, user::ActiveModel};
@@ -44,10 +44,20 @@ impl FromStr for Role {
     }
 }
 
+impl Status {
+    pub fn to_str(&self) -> String {
+        match self {
+            Status::Online => "Online".to_string(),
+            Status::Offline => "Offline".to_string(),
+            Status::Hidden => "Hidden".to_string(),
+        }
+    }
+}
+
 impl User {
     pub fn create_active_model(email: &str, name: &str, password: &str) -> ActiveModel {
         ActiveModel {
-            id: ActiveValue::set(Uuid::new_v4()),
+            id: ActiveValue::NotSet,
             email: ActiveValue::Set(email.to_string()),
             name: ActiveValue::Set(name.to_string()),
             password: ActiveValue::Set(password.to_string()),
