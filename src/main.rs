@@ -25,13 +25,15 @@ async fn main() {
         .expect("Unable to establish connection to database");
     let connection = Arc::new(connection);
     let state = warp::any()
-        .and(warp::header::<String>("Authorization"))
-        .map(move |auth: String| -> Context {
-            let iter = &mut auth.split_whitespace();
+        .and(warp::header::optional::<String>("Authorization"))
+        .map(move |auth: Option<String>| -> Context {
             let mut token = "".to_string();
-            if iter.next() == Some("Bearer") {
-                if let Some(_token) = iter.next() {
-                    token = _token.to_string();
+            if auth.is_some() {
+                let iter = &mut auth.into_iter();
+                if iter.next() == Some("Bearer".to_string()) {
+                    if let Some(_token) = iter.next() {
+                        token = _token.to_string();
+                    }
                 }
             }
             Context {
