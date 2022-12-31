@@ -32,7 +32,7 @@ async fn main() {
                 let iter = &mut auth.into_iter();
                 if iter.next() == Some("Bearer".to_string()) {
                     if let Some(_token) = iter.next() {
-                        token = _token.to_string();
+                        token = _token;
                     }
                 }
             }
