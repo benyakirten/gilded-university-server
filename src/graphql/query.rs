@@ -33,10 +33,7 @@ impl QueryRoot {
             .filter(user::Column::Email.eq(email))
             .one(conn)
             .await?;
-        let res = match found_user {
-            Some(model) => Some(UserResponse::new(&model)),
-            None => None,
-        };
+        let res = found_user.map(|model| UserResponse::new(&model));
         Ok(res)
     }
 
@@ -44,10 +41,7 @@ impl QueryRoot {
         let conn = ctx.connection.as_ref();
         let id = Uuid::parse_str(&id)?;
         let found_user = User::find_by_id(id).one(conn).await?;
-        let res = match found_user {
-            Some(model) => Some(UserResponse::new(&model)),
-            None => None,
-        };
+        let res = found_user.map(|model| UserResponse::new(&model));
         Ok(res)
     }
 }

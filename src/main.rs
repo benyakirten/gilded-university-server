@@ -30,9 +30,8 @@ async fn main() {
             let iter = &mut auth.split_whitespace();
             let mut token = "".to_string();
             if iter.next() == Some("Bearer") {
-                let _token = iter.next();
-                if _token.is_some() {
-                    token = _token.unwrap().to_string();
+                if let Some(_token) = iter.next() {
+                    token = _token.to_string();
                 }
             }
             Context {
