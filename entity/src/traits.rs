@@ -1,13 +1,16 @@
 use std::str::FromStr;
 
-use crate::sea_orm_active_enums::Role;
+use sea_orm::{prelude::Uuid, ActiveValue};
+
+use crate::sea_orm_active_enums::{Role, Status};
+use crate::{prelude::User, user::ActiveModel};
 
 impl Role {
     pub fn meets_requirements(&self, role: &Role) -> bool {
         self.to_int() >= role.to_int()
     }
 
-    fn to_int(&self) -> u8 {
+    pub fn to_int(&self) -> u8 {
         match self {
             Role::Admin => 3,
             Role::Teacher => 2,
@@ -38,5 +41,18 @@ impl FromStr for Role {
             _ => Role::Guest,
         };
         Ok(role)
+    }
+}
+
+impl User {
+    pub fn create_active_model(email: &str, name: &str, password: &str) -> ActiveModel {
+        ActiveModel {
+            id: ActiveValue::set(Uuid::new_v4()),
+            email: ActiveValue::Set(email.to_string()),
+            name: ActiveValue::Set(name.to_string()),
+            password: ActiveValue::Set(password.to_string()),
+            role: ActiveValue::Set(Role::Guest),
+            status: ActiveValue::Set(Status::Online),
+        }
     }
 }

@@ -9,11 +9,12 @@ use jsonwebtoken::{
     decode, encode, errors::Error as JSONError, Algorithm, DecodingKey, EncodingKey, Header,
     Validation,
 };
+use sea_orm::prelude::Uuid;
 use serde::{Deserialize, Serialize};
 
-use ::entity::sea_orm_active_enums::Role;
+use entity::sea_orm_active_enums::Role;
 
-pub async fn create_jwt(uid: &str, role: &Role) -> Result<String, JSONError> {
+pub fn create_jwt(uid: &Uuid, role: &Role) -> Result<String, JSONError> {
     let binding = get_jwt_secret();
     let secret = binding.as_bytes();
     let expiration = Utc::now()
@@ -26,7 +27,7 @@ pub async fn create_jwt(uid: &str, role: &Role) -> Result<String, JSONError> {
     encode(&header, &claims, &EncodingKey::from_secret(secret))
 }
 
-pub fn authorize(role: &Role, token: &str) -> Result<String, Error> {
+pub fn authorize(role: &Role, token: &str) -> Result<Uuid, Error> {
     let decoded = decode::<Claims>(
         token,
         &DecodingKey::from_secret(get_jwt_secret().as_bytes()),
@@ -47,13 +48,13 @@ fn get_jwt_secret() -> String {
 
 #[derive(Debug, Deserialize, Serialize)]
 struct Claims {
-    sub: String,
+    sub: Uuid,
     role: String,
     exp: i64,
 }
 
 impl Claims {
-    pub fn new(sub: &str, role: &Role, exp: i64) -> Claims {
+    pub fn new(sub: &Uuid, role: &Role, exp: i64) -> Claims {
         Claims {
             sub: sub.to_owned(),
             role: role.to_string(),

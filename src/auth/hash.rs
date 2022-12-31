@@ -5,7 +5,7 @@ use pbkdf2::{
     Pbkdf2,
 };
 
-pub async fn hash(password: &str) -> Result<String, Error> {
+pub fn hash(password: &str) -> Result<String, Error> {
     let password = password.as_bytes();
     let salt = SaltString::generate(&mut OsRng);
     let hash = Pbkdf2.hash_password(password, &salt)?;
