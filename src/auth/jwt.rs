@@ -27,6 +27,7 @@ pub fn create_jwt(uid: &Uuid, role: &Role) -> Result<String, JSONError> {
     encode(&header, &claims, &EncodingKey::from_secret(secret))
 }
 
+#[allow(dead_code)]
 pub fn authorize(role: &Role, token: &str) -> Result<Uuid, Error> {
     let decoded = decode::<Claims>(
         token,

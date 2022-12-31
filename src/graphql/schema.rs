@@ -9,6 +9,7 @@ pub type Schema = RootNode<'static, QueryRoot, MutationRoot, EmptySubscription<C
 
 pub struct Context {
     pub connection: Arc<DatabaseConnection>,
+    pub token: String,
 }
 
 pub fn create_schema() -> Schema {

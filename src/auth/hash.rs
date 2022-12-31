@@ -12,6 +12,7 @@ pub fn hash(password: &str) -> Result<String, Error> {
     Ok(hash.to_string())
 }
 
+#[allow(dead_code)]
 pub fn verify(password: &str, hash: &str) -> bool {
     let password = password.as_bytes();
     let parsed_hash = PasswordHash::new(&hash);
