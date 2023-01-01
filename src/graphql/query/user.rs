@@ -10,7 +10,6 @@ use entity::{
 };
 
 #[derive(GraphQLObject)]
-
 pub struct UserResponse {
     pub id: String,
     pub name: String,
@@ -41,19 +40,19 @@ impl UserResponse {
 #[graphql_object(Context = Context)]
 impl QueryRoot {
     pub async fn user_by_email(ctx: &Context, email: String) -> FieldResult<Option<UserResponse>> {
-        user_by_email(ctx, email).await
+        find_user_by_email(ctx, email).await
     }
 
     pub async fn user_by_id(ctx: &Context, id: String) -> FieldResult<Option<UserResponse>> {
-        user_by_id(ctx, id).await
+        find_user_by_id(ctx, id).await
     }
 
     pub async fn users(ctx: &Context) -> FieldResult<Vec<UserResponse>> {
-        users(ctx).await
+        get_users(ctx).await
     }
 }
 
-pub async fn user_by_email(ctx: &Context, email: String) -> FieldResult<Option<UserResponse>> {
+pub async fn find_user_by_email(ctx: &Context, email: String) -> FieldResult<Option<UserResponse>> {
     let conn = ctx.connection.as_ref();
     let found_user = User::find()
         .filter(user::Column::Email.eq(email))
@@ -64,7 +63,7 @@ pub async fn user_by_email(ctx: &Context, email: String) -> FieldResult<Option<U
     Ok(res)
 }
 
-pub async fn user_by_id(ctx: &Context, id: String) -> FieldResult<Option<UserResponse>> {
+pub async fn find_user_by_id(ctx: &Context, id: String) -> FieldResult<Option<UserResponse>> {
     let conn = ctx.connection.as_ref();
     let id = Uuid::parse_str(&id)?;
     let found_user = User::find_by_id(id).one(conn).await?;
@@ -72,7 +71,7 @@ pub async fn user_by_id(ctx: &Context, id: String) -> FieldResult<Option<UserRes
     Ok(res)
 }
 
-pub async fn users(ctx: &Context) -> FieldResult<Vec<UserResponse>> {
+pub async fn get_users(ctx: &Context) -> FieldResult<Vec<UserResponse>> {
     let conn = ctx.connection.as_ref();
     let users = User::find().all(conn).await?;
     let res = UserResponse::multiple(users);
