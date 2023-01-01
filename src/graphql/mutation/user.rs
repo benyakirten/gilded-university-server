@@ -3,12 +3,13 @@ use std::io::ErrorKind;
 use juniper::{graphql_object, FieldResult, GraphQLObject};
 use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, Set};
 
+use super::MutationRoot;
 use crate::{
     auth::{
         hash::{hash, verify},
         jwt::create_jwt,
     },
-    graphql::schema::Context,
+    graphql::{errors::UserError, schema::Context},
 };
 use entity::{
     prelude::User,
@@ -41,11 +42,9 @@ impl SignoutResponse {
     }
 }
 
-pub struct MutationRoot;
-
 #[graphql_object(Context = Context)]
 impl MutationRoot {
-    async fn signup(
+    pub async fn signup(
         ctx: &Context,
         email: String,
         name: String,
@@ -70,10 +69,14 @@ impl MutationRoot {
         Ok(AuthResponse::new(&token))
     }
 
-    async fn signin(ctx: &Context, email: String, password: String) -> FieldResult<AuthResponse> {
+    pub async fn signin(
+        ctx: &Context,
+        email: String,
+        password: String,
+    ) -> FieldResult<AuthResponse> {
         let conn = ctx.connection.as_ref();
         let found = User::find()
-            .filter(user::Column::Email.eq(email))
+            .filter(user::Column::Email.eq(email.to_string()))
             .one(conn)
             .await?;
 
@@ -88,14 +91,14 @@ impl MutationRoot {
                 let token = create_jwt(&found.id, &found.role)?;
                 Ok(AuthResponse::new(&token))
             }
-            None => Err(ErrorKind::NotFound.into()),
+            None => Err(UserError::NoUserByEmail(email).into()),
         }
     }
 
-    async fn signout(ctx: &Context, email: String) -> FieldResult<SignoutResponse> {
+    pub async fn signout(ctx: &Context, email: String) -> FieldResult<SignoutResponse> {
         let conn = ctx.connection.as_ref();
         let found = User::find()
-            .filter(user::Column::Email.eq(email))
+            .filter(user::Column::Email.eq(email.to_string()))
             .one(conn)
             .await?;
 
@@ -107,7 +110,7 @@ impl MutationRoot {
 
                 Ok(SignoutResponse::complete())
             }
-            None => Err(ErrorKind::NotFound.into()),
+            None => Err(UserError::NoUserByEmail(email).into()),
         }
     }
 }

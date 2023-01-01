@@ -1,3 +1,4 @@
+pub mod errors;
 pub mod mutation;
 pub mod query;
 pub mod schema;

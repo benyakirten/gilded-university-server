@@ -1,10 +1,9 @@
 use juniper::{graphql_object, FieldResult, GraphQLObject};
 use sea_orm::{prelude::Uuid, ColumnTrait, EntityTrait, QueryFilter};
 
-use super::schema::Context;
+use super::QueryRoot;
+use crate::graphql::schema::Context;
 use entity::{prelude::User, user};
-
-pub struct QueryRoot;
 
 #[derive(GraphQLObject)]
 
@@ -43,6 +42,7 @@ impl QueryRoot {
             .filter(user::Column::Email.eq(email))
             .one(conn)
             .await?;
+
         let res = found_user.map(|model| UserResponse::single(&model));
         Ok(res)
     }
