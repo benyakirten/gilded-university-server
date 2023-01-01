@@ -79,9 +79,7 @@ impl MutationRoot {
 
         match found {
             Some(found) => {
-                if !verify(&password, &found.password) {
-                    return Err(ErrorKind::ConnectionRefused.into());
-                }
+                verify(&password, &found.password)?;
 
                 let mut found: user::ActiveModel = found.into();
                 found.status = Set(Status::Online.to_owned());

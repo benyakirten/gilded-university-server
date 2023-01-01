@@ -1,7 +1,4 @@
-use std::{
-    io::{Error, ErrorKind},
-    str::FromStr,
-};
+use std::str::FromStr;
 
 use chrono::{Duration, Utc};
 use jsonwebtoken::{
@@ -10,9 +7,25 @@ use jsonwebtoken::{
 };
 use sea_orm::prelude::Uuid;
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use entity::sea_orm_active_enums::Role;
 use gilded_university_server::get_env;
+
+#[derive(Error, Debug)]
+pub enum AuthorizationError {
+    #[error(
+        "Required permission is {} but user has permission {}",
+        required,
+        permission
+    )]
+    InsufficientPermission {
+        required: String,
+        permission: String,
+    },
+    #[error("Unable to decode JWT: {0}")]
+    DecodingError(String),
+}
 
 pub fn create_jwt(uid: &Uuid, role: &Role) -> Result<String, JSONError> {
     let binding = get_env("JWT_SECRET");
@@ -28,18 +41,21 @@ pub fn create_jwt(uid: &Uuid, role: &Role) -> Result<String, JSONError> {
 }
 
 #[allow(dead_code)]
-pub fn authorize(role: &Role, token: &str) -> Result<Uuid, Error> {
+pub fn authorize(role: &Role, token: &str) -> Result<Uuid, AuthorizationError> {
     let decoded = decode::<Claims>(
         token,
         &DecodingKey::from_secret(get_env("JWT_SECRET").as_bytes()),
         &Validation::new(Algorithm::HS512),
     )
-    .map_err(|_| ErrorKind::Other)?;
+    .map_err(|e| AuthorizationError::DecodingError(e.to_string()))?;
 
     let decoded_role = Role::from_str(&decoded.claims.role).unwrap_or(Role::Guest);
     match decoded_role.meets_requirements(role) {
         true => Ok(decoded.claims.sub),
-        false => Err(ErrorKind::PermissionDenied.into()),
+        false => Err(AuthorizationError::InsufficientPermission {
+            required: role.to_str(),
+            permission: decoded_role.to_str(),
+        }),
     }
 }
 
