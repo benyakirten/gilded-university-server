@@ -22,7 +22,7 @@ mod user_response {
         assert_eq!(got.email, "test@test.com");
         assert_eq!(got.id, id.to_string());
         assert_eq!(got.name, "test user");
-        assert_eq!(got.role, "Student");
-        assert_eq!(got.status, "Hidden");
+        assert_eq!(got.role, Role::Student);
+        assert_eq!(got.status, Status::Hidden);
     }
 }

@@ -3,7 +3,11 @@ use sea_orm::{prelude::Uuid, ColumnTrait, EntityTrait, QueryFilter};
 
 use super::QueryRoot;
 use crate::graphql::schema::Context;
-use entity::{prelude::User, user};
+use entity::{
+    prelude::User,
+    sea_orm_active_enums::{Role, Status},
+    user,
+};
 
 #[derive(GraphQLObject)]
 
@@ -11,8 +15,8 @@ pub struct UserResponse {
     pub id: String,
     pub name: String,
     pub email: String,
-    pub role: String,
-    pub status: String,
+    pub role: Role,
+    pub status: Status,
 }
 
 impl UserResponse {
@@ -21,8 +25,8 @@ impl UserResponse {
             id: model.id.to_string(),
             name: model.name.to_string(),
             email: model.email.to_string(),
-            role: model.role.to_str(),
-            status: model.status.to_str(),
+            role: model.role.to_owned(),
+            status: model.status.to_owned(),
         }
     }
 
