@@ -111,4 +111,48 @@ mod test_user_query {
 
         assert!(got.is_err());
     }
+
+    #[tokio::test]
+    async fn find_one_user_for_find_user_by_id() {
+        let id = Uuid::new_v4();
+        let users: Vec<Vec<user_entity::Model>> = vec![vec![user_entity::Model {
+            id: id.clone(),
+            email: "test1@test.com".to_string(),
+            name: "test user1".to_string(),
+            password: "testpass".to_string(),
+            status: Status::Online,
+            role: Role::Teacher,
+        }]];
+        let context = create_mock_context(users, None);
+
+        let got = find_user_by_id(&context, id.to_string())
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(got.id, id.to_string());
+        assert_eq!(got.email, "test1@test.com");
+        assert_eq!(got.name, "test user1");
+        assert_eq!(got.status, Status::Online);
+        assert_eq!(got.role, Role::Teacher);
+    }
+
+    #[tokio::test]
+    async fn find_no_user_for_find_user_by_id() {
+        let results: Vec<Vec<user_entity::Model>> = vec![vec![]];
+        let context = create_mock_context(results, None);
+
+        let got = find_user_by_id(&context, Uuid::new_v4().to_string())
+            .await
+            .unwrap();
+
+        assert!(got.is_none());
+    }
+
+    #[tokio::test]
+    async fn get_error_for_find_user_by_id() {
+        let context = create_errored_context(vec![DbErr::ConnectionAcquire.into()], None);
+        let got = find_user_by_id(&context, Uuid::new_v4().to_string()).await;
+
+        assert!(got.is_err());
+    }
 }
