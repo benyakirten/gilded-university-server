@@ -40,29 +40,41 @@ impl UserResponse {
 
 #[graphql_object(Context = Context)]
 impl QueryRoot {
-    async fn userByEmail(ctx: &Context, email: String) -> FieldResult<Option<UserResponse>> {
-        let conn = ctx.connection.as_ref();
-        let found_user = User::find()
-            .filter(user::Column::Email.eq(email))
-            .one(conn)
-            .await?;
-
-        let res = found_user.map(|model| UserResponse::single(&model));
-        Ok(res)
+    pub async fn user_by_email(ctx: &Context, email: String) -> FieldResult<Option<UserResponse>> {
+        user_by_email(ctx, email).await
     }
 
-    async fn userById(ctx: &Context, id: String) -> FieldResult<Option<UserResponse>> {
-        let conn = ctx.connection.as_ref();
-        let id = Uuid::parse_str(&id)?;
-        let found_user = User::find_by_id(id).one(conn).await?;
-        let res = found_user.map(|model| UserResponse::single(&model));
-        Ok(res)
+    pub async fn user_by_id(ctx: &Context, id: String) -> FieldResult<Option<UserResponse>> {
+        user_by_id(ctx, id).await
     }
 
-    async fn users(ctx: &Context) -> FieldResult<Vec<UserResponse>> {
-        let conn = ctx.connection.as_ref();
-        let users = User::find().all(conn).await?;
-        let res = UserResponse::multiple(users);
-        Ok(res)
+    pub async fn users(ctx: &Context) -> FieldResult<Vec<UserResponse>> {
+        users(ctx).await
     }
+}
+
+pub async fn user_by_email(ctx: &Context, email: String) -> FieldResult<Option<UserResponse>> {
+    let conn = ctx.connection.as_ref();
+    let found_user = User::find()
+        .filter(user::Column::Email.eq(email))
+        .one(conn)
+        .await?;
+
+    let res = found_user.map(|model| UserResponse::single(&model));
+    Ok(res)
+}
+
+pub async fn user_by_id(ctx: &Context, id: String) -> FieldResult<Option<UserResponse>> {
+    let conn = ctx.connection.as_ref();
+    let id = Uuid::parse_str(&id)?;
+    let found_user = User::find_by_id(id).one(conn).await?;
+    let res = found_user.map(|model| UserResponse::single(&model));
+    Ok(res)
+}
+
+pub async fn users(ctx: &Context) -> FieldResult<Vec<UserResponse>> {
+    let conn = ctx.connection.as_ref();
+    let users = User::find().all(conn).await?;
+    let res = UserResponse::multiple(users);
+    Ok(res)
 }

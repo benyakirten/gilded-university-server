@@ -5,6 +5,7 @@ use warp::{http::Response, Filter};
 
 mod auth;
 mod graphql;
+mod testutils;
 
 use crate::graphql::schema::{create_schema, Context};
 use gilded_university_server::connect_to_database;
