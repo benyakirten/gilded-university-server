@@ -8,15 +8,15 @@ use entity::{prelude::User, user};
 #[derive(GraphQLObject)]
 
 pub struct UserResponse {
-    id: String,
-    name: String,
-    email: String,
-    role: String,
-    status: String,
+    pub id: String,
+    pub name: String,
+    pub email: String,
+    pub role: String,
+    pub status: String,
 }
 
 impl UserResponse {
-    fn single(model: &user::Model) -> Self {
+    pub fn single(model: &user::Model) -> Self {
         UserResponse {
             id: model.id.to_string(),
             name: model.name.to_string(),
@@ -26,7 +26,7 @@ impl UserResponse {
         }
     }
 
-    fn multiple(models: Vec<user::Model>) -> Vec<Self> {
+    pub fn multiple(models: Vec<user::Model>) -> Vec<Self> {
         models
             .into_iter()
             .map(|model| UserResponse::single(&model))
