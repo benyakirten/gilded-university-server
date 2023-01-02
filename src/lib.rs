@@ -4,9 +4,9 @@ use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 
 use migration::{DbErr, Migrator, MigratorTrait};
 
-pub async fn connect_to_database() -> Result<DatabaseConnection, DbErr> {
-    let uri = get_env("DATABASE_URL");
-    let opt = ConnectOptions::new(uri);
+pub async fn connect_to_database(key: &str) -> Result<DatabaseConnection, DbErr> {
+    let url = get_env(key);
+    let opt = ConnectOptions::new(url);
     // Connections options can be inserted
 
     let connection = Database::connect(opt).await?;
@@ -17,6 +17,8 @@ pub async fn connect_to_database() -> Result<DatabaseConnection, DbErr> {
 pub fn get_env(key: &str) -> String {
     env::var(key).unwrap_or_else(|_| panic!("{} environment variable is not defined", key))
 }
+
+// pub fn setup(key: &str) {}
 
 #[cfg(test)]
 mod test {
