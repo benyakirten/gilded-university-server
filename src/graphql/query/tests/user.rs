@@ -55,7 +55,7 @@ mod test_user_response {
 }
 
 #[cfg(test)]
-mod test_user_query {
+mod test_find_user_by_email {
     use std::vec;
 
     use migration::DbErr;
@@ -113,6 +113,23 @@ mod test_user_query {
 
         assert!(got.is_err());
     }
+}
+
+#[cfg(test)]
+mod test_find_user_by_id {
+    use std::vec;
+
+    use migration::DbErr;
+    use sea_orm::prelude::Uuid;
+
+    use crate::{
+        graphql::query::user::*,
+        testutils::{create_errored_context, create_mock_context},
+    };
+    use entity::{
+        sea_orm_active_enums::{Role, Status},
+        user as user_entity,
+    };
 
     #[tokio::test]
     async fn find_one_user_for_find_user_by_id() {
@@ -157,6 +174,23 @@ mod test_user_query {
 
         assert!(got.is_err());
     }
+}
+
+#[cfg(test)]
+mod test_get_users {
+    use std::vec;
+
+    use migration::DbErr;
+    use sea_orm::prelude::Uuid;
+
+    use crate::{
+        graphql::query::user::*,
+        testutils::{create_errored_context, create_mock_context},
+    };
+    use entity::{
+        sea_orm_active_enums::{Role, Status},
+        user as user_entity,
+    };
 
     #[tokio::test]
     async fn find_users_for_get_users() {
