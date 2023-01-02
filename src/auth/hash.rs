@@ -54,5 +54,7 @@ mod test {
         let got = verify("differentpassword", &password_hash);
 
         assert!(got.is_err());
+        let err = got.err().unwrap().to_string();
+        assert_eq!(err, "invalid password")
     }
 }

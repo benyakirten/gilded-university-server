@@ -7,25 +7,10 @@ use jsonwebtoken::{
 };
 use sea_orm::prelude::Uuid;
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
+use crate::graphql::errors::AuthorizationError;
 use entity::sea_orm_active_enums::Role;
 use gilded_university_server::get_env;
-
-#[derive(Error, Debug)]
-pub enum AuthorizationError {
-    #[error(
-        "Required permission is {} but user has permission {}",
-        required,
-        permission
-    )]
-    InsufficientPermission {
-        required: String,
-        permission: String,
-    },
-    #[error("Unable to decode JWT: {0}")]
-    DecodingError(String),
-}
 
 pub fn create_jwt(uid: &Uuid, role: &Role) -> Result<String, JSONError> {
     let binding = get_env("JWT_SECRET");
@@ -60,10 +45,10 @@ pub fn authorize(role: &Role, token: &str) -> Result<Uuid, AuthorizationError> {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
-struct Claims {
-    sub: Uuid,
-    role: String,
-    exp: i64,
+pub struct Claims {
+    pub sub: Uuid,
+    pub role: String,
+    pub exp: i64,
 }
 
 impl Claims {
