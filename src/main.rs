@@ -4,6 +4,7 @@ use dotenvy::dotenv;
 use warp::{http::Response, Filter};
 
 mod auth;
+mod errors;
 mod graphql;
 mod testutils;
 

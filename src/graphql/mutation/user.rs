@@ -7,7 +7,8 @@ use crate::{
         hash::{hash, verify},
         jwt::create_jwt,
     },
-    graphql::{errors::UserError, schema::Context},
+    errors::UserError,
+    graphql::schema::Context,
 };
 use entity::{
     prelude::User,

@@ -8,7 +8,7 @@ use jsonwebtoken::{
 use sea_orm::prelude::Uuid;
 use serde::{Deserialize, Serialize};
 
-use crate::graphql::errors::AuthorizationError;
+use crate::errors::AuthorizationError;
 use entity::sea_orm_active_enums::Role;
 use gilded_university_server::get_env;
 
