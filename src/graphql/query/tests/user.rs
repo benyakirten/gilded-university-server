@@ -56,6 +56,8 @@ mod test_user_response {
 
 #[cfg(test)]
 mod test_user_query {
+    use std::vec;
+
     use migration::DbErr;
     use sea_orm::prelude::Uuid;
 
@@ -152,6 +154,52 @@ mod test_user_query {
     async fn get_error_for_find_user_by_id() {
         let context = create_errored_context(vec![DbErr::ConnectionAcquire.into()], None);
         let got = find_user_by_id(&context, Uuid::new_v4().to_string()).await;
+
+        assert!(got.is_err());
+    }
+
+    #[tokio::test]
+    async fn find_users_for_get_users() {
+        let ids = (0..10).map(|_| Uuid::new_v4()).collect::<Vec<Uuid>>();
+        let roles = vec![Role::Guest, Role::Student, Role::Teacher, Role::Admin];
+        let statuses = vec![Status::Online, Status::Offline, Status::Hidden];
+        let users = (0..10)
+            .map(|i| user_entity::Model {
+                id: ids[i].clone(),
+                email: format!("test{}@test.com", i),
+                name: format!("test user{}", i),
+                password: "testpass".to_string(),
+                status: statuses[i % 3].clone(),
+                role: roles[i % 4].clone(),
+            })
+            .collect::<Vec<user_entity::Model>>();
+        let results = vec![users];
+        let context = create_mock_context(results, None);
+
+        let result = get_users(&context).await.unwrap();
+        for i in 0..10 {
+            let got = &result[i];
+            assert_eq!(got.id, ids[i].to_string());
+            assert_eq!(got.email, format!("test{}@test.com", i));
+            assert_eq!(got.name, format!("test user{}", i));
+            assert_eq!(got.role, roles[i % 4].clone());
+            assert_eq!(got.status, statuses[i % 3].clone());
+        }
+    }
+
+    #[tokio::test]
+    async fn find_no_users_for_get_users() {
+        let results: Vec<Vec<user_entity::Model>> = vec![vec![]];
+        let context = create_mock_context(results, None);
+
+        let result = get_users(&context).await.unwrap();
+        assert_eq!(result.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn get_error_for_get_users() {
+        let context = create_errored_context(vec![DbErr::ConnectionAcquire.into()], None);
+        let got = get_users(&context).await;
 
         assert!(got.is_err());
     }

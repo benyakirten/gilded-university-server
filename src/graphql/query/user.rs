@@ -9,7 +9,7 @@ use entity::{
     user,
 };
 
-#[derive(GraphQLObject)]
+#[derive(GraphQLObject, Debug)]
 pub struct UserResponse {
     pub id: String,
     pub name: String,
