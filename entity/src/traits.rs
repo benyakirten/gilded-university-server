@@ -30,10 +30,10 @@ impl Role {
     }
 }
 #[derive(Debug)]
-pub struct UnexpetedError {}
+pub struct UnexpectedError {}
 
 impl FromStr for Role {
-    type Err = UnexpetedError;
+    type Err = UnexpectedError;
     fn from_str(role: &str) -> Result<Self, Self::Err> {
         let role = match role {
             "Admin" => Role::Admin,

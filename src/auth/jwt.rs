@@ -34,11 +34,7 @@ pub fn authorize(role: &Role, token: &str) -> Result<Uuid, AuthorizationError> {
     )
     .map_err(|e| AuthorizationError::DecodingError(e.to_string()))?;
 
-    // I'm not sure why, but I think it's because of serialization/deserialization
-    // But the string will be "'{Role}'" rather than "{Role}"
-    let decoded_role = &decoded.claims.role;
-    let decoded_role = &decoded_role[1..decoded_role.len() - 1];
-    let decoded_role = Role::from_str(decoded_role).unwrap_or(Role::Guest);
+    let decoded_role = Role::from_str(&decoded.claims.role).unwrap_or(Role::Guest);
     match decoded_role.meets_requirements(role) {
         true => Ok(decoded.claims.sub),
         false => Err(AuthorizationError::InsufficientPermission {
@@ -59,7 +55,7 @@ impl Claims {
     pub fn new(sub: &Uuid, role: &Role, exp: i64) -> Claims {
         Claims {
             sub: sub.to_owned(),
-            role: role.to_string(),
+            role: role.to_str(),
             exp: exp.to_owned(),
         }
     }
@@ -97,7 +93,7 @@ mod test_create_jwt {
         .claims;
 
         assert_eq!(claim.sub, id);
-        assert_eq!(claim.role, "'Student'");
+        assert_eq!(claim.role, "Student");
         assert_eq!(claim.exp, exp);
     }
 }
@@ -167,4 +163,19 @@ mod test_authorize {
 }
 
 #[cfg(test)]
-mod test_claims {}
+mod test_claims {
+    use entity::sea_orm_active_enums::Role;
+    use sea_orm::prelude::Uuid;
+
+    use super::Claims;
+
+    #[test]
+    fn create_new_claim() {
+        let id = Uuid::new_v4();
+        let got = Claims::new(&id, &Role::Teacher, 100);
+
+        assert_eq!(got.exp, 100);
+        assert_eq!(got.role, "Teacher");
+        assert_eq!(got.sub, id);
+    }
+}
