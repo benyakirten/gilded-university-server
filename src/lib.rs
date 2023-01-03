@@ -4,6 +4,12 @@ use sea_orm::{ConnectOptions, Database, DatabaseConnection};
 
 use migration::{DbErr, Migrator, MigratorTrait};
 
+pub mod auth;
+pub mod errors;
+pub mod graphql;
+pub mod testutils;
+pub mod time;
+
 pub async fn connect_to_database(key: &str) -> Result<DatabaseConnection, DbErr> {
     let url = get_env(key);
     let opt = ConnectOptions::new(url);

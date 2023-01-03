@@ -5,10 +5,12 @@ use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, 
 use sea_orm::prelude::Uuid;
 use serde::{Deserialize, Serialize};
 
-use crate::errors::{AuthorizationError, TimeError};
-use crate::time::Time;
+use crate::{
+    errors::{AuthorizationError, TimeError},
+    get_env,
+    time::Time,
+};
 use entity::sea_orm_active_enums::Role;
-use gilded_university_server::get_env;
 
 pub fn create_jwt(uid: &Uuid, role: &Role) -> Result<String, AuthorizationError> {
     let binding = get_env("JWT_SECRET");

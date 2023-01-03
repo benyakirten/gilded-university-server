@@ -1,21 +1,15 @@
 use std::sync::Arc;
 
-use dotenvy::dotenv;
-use warp::{hyper::Uri, Filter};
+use warp::{filters::BoxedFilter, http::Response, Filter};
 
 use gilded_university_server::{
     connect_to_database,
     graphql::schema::{create_schema, Context},
 };
 
-#[tokio::main]
-async fn main() {
-    dotenv().expect(".env environment file not found");
-    let redirect = warp::path::end().map(|| warp::redirect(Uri::from_static("/graphiql")));
-
-    let connection = connect_to_database("DATABASE_URL")
-        .await
-        .expect("Unable to establish connection to database");
+#[allow(dead_code)]
+pub async fn make_graphql_filter() -> BoxedFilter<(Response<Vec<u8>>,)> {
+    let connection = connect_to_database("TEST_DATABASE_URL").await.unwrap();
     let connection = Arc::new(connection);
     let state = warp::any()
         .and(warp::header::optional::<String>("Authorization"))
@@ -34,15 +28,5 @@ async fn main() {
                 token,
             }
         });
-    let graphql_filter = juniper_warp::make_graphql_filter(create_schema(), state.boxed());
-
-    warp::serve(
-        warp::get()
-            .and(warp::path("graphiql"))
-            .and(juniper_warp::graphiql_filter("/graphql", None))
-            .or(redirect)
-            .or(warp::path("graphql").and(graphql_filter)),
-    )
-    .run(([127, 0, 0, 1], 8080))
-    .await
+    juniper_warp::make_graphql_filter(create_schema(), state.boxed())
 }
