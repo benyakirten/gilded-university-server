@@ -1,5 +1,5 @@
 use juniper::{graphql_object, FieldResult, GraphQLObject};
-use sea_orm::{prelude::Uuid, ColumnTrait, EntityTrait, QueryFilter};
+use sea_orm::prelude::Uuid;
 
 use super::QueryRoot;
 use crate::graphql::schema::Context;
@@ -54,10 +54,7 @@ impl QueryRoot {
 
 pub async fn find_user_by_email(ctx: &Context, email: String) -> FieldResult<Option<UserResponse>> {
     let conn = ctx.connection.as_ref();
-    let found_user = User::find()
-        .filter(user::Column::Email.eq(email))
-        .one(conn)
-        .await?;
+    let found_user = User::find_one_by_email(&email, conn).await?;
 
     let res = found_user.map(|model| UserResponse::single(&model));
     Ok(res)
@@ -66,14 +63,14 @@ pub async fn find_user_by_email(ctx: &Context, email: String) -> FieldResult<Opt
 pub async fn find_user_by_id(ctx: &Context, id: String) -> FieldResult<Option<UserResponse>> {
     let conn = ctx.connection.as_ref();
     let id = Uuid::parse_str(&id)?;
-    let found_user = User::find_by_id(id).one(conn).await?;
+    let found_user = User::find_one_by_id(&id, conn).await?;
     let res = found_user.map(|model| UserResponse::single(&model));
     Ok(res)
 }
 
 pub async fn get_users(ctx: &Context) -> FieldResult<Vec<UserResponse>> {
     let conn = ctx.connection.as_ref();
-    let users = User::find().all(conn).await?;
+    let users = User::find_all(conn).await?;
     let res = UserResponse::multiple(users);
     Ok(res)
 }
