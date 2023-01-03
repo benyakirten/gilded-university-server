@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use dotenvy::dotenv;
 use migration::DbErr;
 use sea_orm::{DatabaseConnection, EntityTrait};
 use warp::{filters::BoxedFilter, http::Response, Filter};
@@ -12,6 +13,7 @@ use gilded_university_server::{
 
 #[allow(dead_code)]
 pub async fn make_graphql_filter() -> BoxedFilter<(Response<Vec<u8>>,)> {
+    dotenv().ok();
     let connection = connect_to_test_database().await;
     let connection = Arc::new(connection);
     let state = warp::any()
