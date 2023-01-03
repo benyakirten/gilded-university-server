@@ -7,6 +7,7 @@ mod auth;
 mod errors;
 mod graphql;
 mod testutils;
+mod time;
 
 use crate::graphql::schema::{create_schema, Context};
 use gilded_university_server::connect_to_database;

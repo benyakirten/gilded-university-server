@@ -862,7 +862,6 @@ dependencies = [
 name = "gilded-university-server"
 version = "0.1.0"
 dependencies = [
- "chrono",
  "dotenvy",
  "entity",
  "jsonwebtoken",
