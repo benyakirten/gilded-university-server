@@ -3,11 +3,11 @@ mod integration_warp_user_integration {
     use dotenvy::dotenv;
 
     use crate::{
-        common::make_graphql_filter,
+        common::{delete_all_users, make_graphql_filter},
         warp::{
             user::{
-                delete_all_users, GQLSigninRes, GQLSignoutRes, GQLSignupRes, GQLUserByEmailRes,
-                GQLUserByIdRes, GQLUsersRes,
+                GQLSigninRes, GQLSignoutRes, GQLSignupRes, GQLUserByEmailRes, GQLUserByIdRes,
+                GQLUsersRes,
             },
             GQLRequest, GQLResponse,
         },

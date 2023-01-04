@@ -4,9 +4,9 @@ mod integration_warp_user_mutation {
     use entity::sea_orm_active_enums::{Role, Status};
 
     use crate::{
-        common::make_graphql_filter,
+        common::{delete_all_users, get_all_users, make_graphql_filter},
         warp::{
-            user::{delete_all_users, get_all_users, GQLSigninRes, GQLSignoutRes, GQLSignupRes},
+            user::{GQLSigninRes, GQLSignoutRes, GQLSignupRes},
             GQLRequest, GQLResponse,
         },
     };

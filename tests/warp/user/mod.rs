@@ -1,5 +1,5 @@
 use migration::DbErr;
-use sea_orm::{prelude::Uuid, DeleteResult, EntityTrait, InsertResult};
+use sea_orm::{prelude::Uuid, EntityTrait, InsertResult, Set};
 use serde::{Deserialize, Serialize};
 
 use super::GQLResponse;
@@ -14,33 +14,23 @@ pub mod user_integration;
 pub mod user_mutation;
 pub mod user_query;
 
-pub async fn delete_all_users() -> Result<DeleteResult, DbErr> {
-    let conn = connect_to_database("TEST_DATABASE_URL").await.unwrap();
-    user::Entity::delete_many().exec(&conn).await
-}
-
-pub async fn get_all_users() -> Result<Vec<user::Model>, DbErr> {
-    let conn = connect_to_database("TEST_DATABASE_URL").await.unwrap();
-    User::find().all(&conn).await
-}
-
 pub async fn seed_users() -> Result<InsertResult<user::ActiveModel>, DbErr> {
     let conn = connect_to_database("TEST_DATABASE_URL").await.unwrap();
     let model_one = user::ActiveModel {
-        id: sea_orm::ActiveValue::Set(Uuid::new_v4()),
-        email: sea_orm::ActiveValue::Set("test@test.com".to_string()),
-        name: sea_orm::ActiveValue::Set("test user".to_string()),
-        password: sea_orm::ActiveValue::Set("testpassword".to_string()),
-        status: sea_orm::ActiveValue::Set(Status::Online),
-        role: sea_orm::ActiveValue::Set(Role::Guest),
+        id: Set(Uuid::new_v4()),
+        email: Set("test@test.com".to_string()),
+        name: Set("test user".to_string()),
+        password: Set("testpassword".to_string()),
+        status: Set(Status::Online),
+        role: Set(Role::Guest),
     };
     let model_two = user::ActiveModel {
-        id: sea_orm::ActiveValue::Set(Uuid::new_v4()),
-        email: sea_orm::ActiveValue::Set("test2@test.com".to_string()),
-        name: sea_orm::ActiveValue::Set("test user2".to_string()),
-        password: sea_orm::ActiveValue::Set("testpassword".to_string()),
-        status: sea_orm::ActiveValue::Set(Status::Offline),
-        role: sea_orm::ActiveValue::Set(Role::Teacher),
+        id: Set(Uuid::new_v4()),
+        email: Set("test2@test.com".to_string()),
+        name: Set("test user2".to_string()),
+        password: Set("testpassword".to_string()),
+        status: Set(Status::Offline),
+        role: Set(Role::Teacher),
     };
     User::insert_many(vec![model_one, model_two])
         .exec(&conn)

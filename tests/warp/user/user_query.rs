@@ -3,9 +3,9 @@ mod integration_warp_user_query {
     use dotenvy::dotenv;
 
     use crate::{
-        common::make_graphql_filter,
+        common::{delete_all_users, make_graphql_filter},
         warp::{
-            user::{delete_all_users, seed_users, GQLUserByEmailRes, GQLUserByIdRes, GQLUsersRes},
+            user::{seed_users, GQLUserByEmailRes, GQLUserByIdRes, GQLUsersRes},
             GQLRequest,
         },
     };
