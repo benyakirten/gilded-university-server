@@ -1,28 +1,19 @@
 use std::sync::Arc;
 
 use dotenvy::dotenv;
-use warp::{http::Response, Filter};
+use warp::{hyper::Uri, Filter};
 
-mod auth;
-mod errors;
-mod graphql;
-mod testutils;
-
-use crate::graphql::schema::{create_schema, Context};
-use gilded_university_server::connect_to_database;
+use gilded_university_server::{
+    connect_to_database,
+    graphql::schema::{create_schema, Context},
+};
 
 #[tokio::main]
 async fn main() {
     dotenv().expect(".env environment file not found");
-    let homepage = warp::path::end().map(|| {
-        Response::builder()
-            .header("content-type", "text/html")
-            .body(
-                "<html><h1>juniper_warp</h1><div>visit <a href=\"/graphiql\">/graphiql</a></html>",
-            )
-    });
+    let redirect = warp::path::end().map(|| warp::redirect(Uri::from_static("/graphiql")));
 
-    let connection = connect_to_database()
+    let connection = connect_to_database("DATABASE_URL")
         .await
         .expect("Unable to establish connection to database");
     let connection = Arc::new(connection);
@@ -49,7 +40,7 @@ async fn main() {
         warp::get()
             .and(warp::path("graphiql"))
             .and(juniper_warp::graphiql_filter("/graphql", None))
-            .or(homepage)
+            .or(redirect)
             .or(warp::path("graphql").and(graphql_filter)),
     )
     .run(([127, 0, 0, 1], 8080))

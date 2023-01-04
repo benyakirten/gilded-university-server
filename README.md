@@ -1,3 +1,6 @@
+![Unit Tests](https://github.com/benyakirten/gilded-university-server/actions/workflows/fmt_test_lint.yml/badge.svg)
+![Integration Tests](https://github.com/benyakirten/gilded-university-server/actions/workflows/integration_tests.yml/badge.svg)
+
 # What is this?
 
 It's a backend for the Gilded University app (maybe frontend too). It uses Diesel with a Postgres database and graphql.
@@ -11,3 +14,4 @@ A `.env` file should be created in the top level folder with the following valus
 
 * `DATABASE_URL` - this should be a connection URL to connect to a postgres database. It must include the database name at the end.
 * `JWT_SECRET` - a secret used to encode and decode JWTs
+* `TEST_DATABASE_URL` - the URL for the database used for tests in the tests folder (integration and e2e tests)

@@ -1,5 +1,5 @@
 use juniper::{graphql_object, FieldResult, GraphQLObject};
-use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, Set};
+use sea_orm::Set;
 
 use super::MutationRoot;
 use crate::{
@@ -73,18 +73,14 @@ pub async fn signup(
     password: String,
 ) -> FieldResult<AuthResponse> {
     let conn = ctx.connection.as_ref();
-    let existing = User::find()
-        .filter(user::Column::Email.eq(email.clone()))
-        .one(conn)
-        .await?;
-
+    let existing = User::find_one_by_email(&email, conn).await?;
     if existing.is_some() {
-        return Err(UserError::UserWithEmailAlreadyExists(email).into());
+        return Err(UserError::UnableToComplete.into());
     }
 
     let pass = hash(&password)?;
     let new_user = User::create_active_model(&email, &name, &pass);
-    let res = user::Entity::insert(new_user).exec(conn).await?;
+    let res = User::insert_one(new_user, conn).await?;
 
     let id = res.last_insert_id;
     let token = create_jwt(&id, &Role::Guest)?;
@@ -93,41 +89,36 @@ pub async fn signup(
 
 pub async fn signin(ctx: &Context, email: String, password: String) -> FieldResult<AuthResponse> {
     let conn = ctx.connection.as_ref();
-    let found = User::find()
-        .filter(user::Column::Email.eq(email.to_string()))
-        .one(conn)
-        .await?;
-
+    let found = User::find_one_by_email(&email, conn).await?;
     match found {
         Some(found) => {
-            verify(&password, &found.password)?;
+            verify(&password, &found.password).map_err(|_| UserError::IncorrectEmailOrPassword)?;
 
             let mut found: user::ActiveModel = found.into();
             found.status = Set(Status::Online.to_owned());
-            let found: user::Model = User::update(found).exec(conn).await?;
+            let found: user::Model = User::update_one(found, conn).await?;
 
             let token = create_jwt(&found.id, &found.role)?;
             Ok(AuthResponse::new(&token))
         }
-        None => Err(UserError::NoUserByEmail(email).into()),
+        None => Err(UserError::IncorrectEmailOrPassword.into()),
     }
 }
 
 pub async fn signout(ctx: &Context, email: String) -> FieldResult<SignoutResponse> {
     let conn = ctx.connection.as_ref();
-    let found = User::find()
-        .filter(user::Column::Email.eq(email.to_string()))
-        .one(conn)
-        .await?;
+    let found = User::find_one_by_email(&email, conn).await?;
+
+    // TODO: Verify token is from user that is trying to log out
 
     match found {
         Some(found) => {
             let mut found: user::ActiveModel = found.into();
             found.status = Set(Status::Offline.to_owned());
-            User::update(found).exec(conn).await?;
+            User::update_one(found, conn).await?;
 
             Ok(SignoutResponse::complete())
         }
-        None => Err(UserError::NoUserByEmail(email).into()),
+        None => Err(UserError::UnableToComplete.into()),
     }
 }

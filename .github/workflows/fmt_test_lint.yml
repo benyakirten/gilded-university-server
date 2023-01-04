@@ -1,6 +1,6 @@
 on: [push, pull_request]
 
-name: Continuous integration
+name: Unit Test
 
 jobs:
   check:
@@ -30,7 +30,7 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p entity --workspace
+          args: -p entity --workspace -- --skip integration_
 
   fmt:
     name: Rustfmt
