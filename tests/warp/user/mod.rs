@@ -3,17 +3,21 @@ use sea_orm::{DeleteResult, EntityTrait};
 use serde::{Deserialize, Serialize};
 
 use super::GQLResponse;
-use crate::common::connect_to_test_database;
-use entity::user;
+use entity::{prelude::User, user};
+use gilded_university_server::connect_to_database;
 
 pub mod user_integration;
 pub mod user_mutation;
 pub mod user_query;
 
-#[allow(dead_code)]
 pub async fn delete_all_users() -> Result<DeleteResult, DbErr> {
-    let conn = connect_to_test_database().await;
+    let conn = connect_to_database("TEST_DATABASE_URL").await.unwrap();
     user::Entity::delete_many().exec(&conn).await
+}
+
+pub async fn get_all_users() -> Result<Vec<user::Model>, DbErr> {
+    let conn = connect_to_database("TEST_DATABASE_URL").await.unwrap();
+    User::find().all(&conn).await
 }
 
 #[allow(dead_code)]
@@ -62,6 +66,7 @@ pub struct GQLAuthResponse {
     pub token: String,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct GQLSignoutResponse {
     pub signout: GQLSuccessResponse,
 }

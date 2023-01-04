@@ -1,9 +1,12 @@
 #[cfg(test)]
 mod integration_warp_user_mutation {
+    use dotenvy::dotenv;
+    use entity::sea_orm_active_enums::{Role, Status};
+
     use crate::{
         common::make_graphql_filter,
         warp::{
-            user::{delete_all_users, GQLSignupRes},
+            user::{delete_all_users, get_all_users, GQLSignoutRes, GQLSignupRes},
             GQLRequest, GQLResponse,
         },
     };
@@ -13,12 +16,13 @@ mod integration_warp_user_mutation {
     // We will use one function that will perform all the test
     #[tokio::test]
     async fn user_mutation() {
+        dotenv().ok();
         let filter = make_graphql_filter().await;
 
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
             mutation {
-                signup(email: "test@test.com", name:"test name", password:"abc123") {
+                signup(email: "test@test.com", name:"test user", password:"abc123") {
                     token  
                 }
             }"#
@@ -42,7 +46,7 @@ mod integration_warp_user_mutation {
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
             mutation {
-                signup(email: "test2@test.com", name:"test name2", password:"abc123") {
+                signup(email: "test2@test.com", name:"test user2", password:"abc123") {
                     token  
                 }
             }"#
@@ -66,7 +70,7 @@ mod integration_warp_user_mutation {
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
             mutation {
-                signup(email: "test2@test.com", name:"test name2", password:"abc123") {
+                signup(email: "test2@test.com", name:"test user2", password:"abc123") {
                     token  
                 }
             }"#
@@ -79,8 +83,6 @@ mod integration_warp_user_mutation {
             .filter(&filter)
             .await
             .unwrap();
-        // let x = String::from_utf8(response.body().to_vec()).unwrap();
-        // println!("{}", x);
 
         let response_json: GQLResponse<GQLSignupRes> =
             serde_json::from_slice(response.body()).unwrap();
@@ -93,12 +95,52 @@ mod integration_warp_user_mutation {
             "User with email `test2@test.com` already exists"
         );
 
+        let users = get_all_users().await.unwrap();
+        let user1 = &users[0];
+        let user2 = &users[1];
+
+        assert_eq!(user1.email, "test@test.com");
+        assert_eq!(user1.name, "test user");
+        assert_eq!(user1.role, Role::Guest);
+        assert_eq!(user1.status, Status::Online);
+
+        assert_eq!(user2.email, "test2@test.com");
+        assert_eq!(user2.name, "test user2");
+        assert_eq!(user2.role, Role::Guest);
+        assert_eq!(user2.status, Status::Online);
+
+        let body: GQLRequest<()> = GQLRequest {
+            query: r#"
+            mutation {
+                signout(email: "test2@test.com") {
+                    token  
+                }
+            }"#
+            .to_string(),
+            variables: None,
+        };
+        let response = warp::test::request()
+            .method("POST")
+            .json(&body)
+            .filter(&filter)
+            .await
+            .unwrap();
+
+        let response_json: GQLSignoutRes = serde_json::from_slice(response.body()).unwrap();
+        assert!(response_json.data.is_some());
+        assert!(response_json.errors.is_none());
+
+        let data = response_json.data.unwrap();
+        assert!(data.signout.success);
+
         // signout - success
         // signin - success
         // signin - failure - email doesn't exist
         // signin - failure - password incorrect
         // signout - failure - email doesn't exist
-        // remove all records
         delete_all_users().await.unwrap();
+
+        // let x = String::from_utf8(response.body().to_vec()).unwrap();
+        // println!("{}", x);
     }
 }
