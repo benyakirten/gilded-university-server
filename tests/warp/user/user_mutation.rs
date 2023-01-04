@@ -4,7 +4,7 @@ mod integration_warp_user_mutation {
         common::make_graphql_filter,
         warp::{
             user::{delete_all_users, GQLSignupRes},
-            GQLRequest,
+            GQLRequest, GQLResponse,
         },
     };
 
@@ -31,8 +31,13 @@ mod integration_warp_user_mutation {
             .filter(&filter)
             .await
             .unwrap();
+
         let response_json: GQLSignupRes = serde_json::from_slice(response.body()).unwrap();
-        assert!(!response_json.data.signup.token.is_empty());
+        assert!(response_json.data.is_some());
+        assert!(response_json.errors.is_none());
+
+        let data = response_json.data.unwrap();
+        assert!(!data.signup.token.is_empty());
 
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
@@ -50,10 +55,44 @@ mod integration_warp_user_mutation {
             .filter(&filter)
             .await
             .unwrap();
-        let response_json: GQLSignupRes = serde_json::from_slice(response.body()).unwrap();
-        assert!(!response_json.data.signup.token.is_empty());
 
-        // signup - failure - email already exists
+        let response_json: GQLSignupRes = serde_json::from_slice(response.body()).unwrap();
+        assert!(response_json.data.is_some());
+        assert!(response_json.errors.is_none());
+
+        let data = response_json.data.unwrap();
+        assert!(!data.signup.token.is_empty());
+
+        let body: GQLRequest<()> = GQLRequest {
+            query: r#"
+            mutation {
+                signup(email: "test2@test.com", name:"test name2", password:"abc123") {
+                    token  
+                }
+            }"#
+            .to_string(),
+            variables: None,
+        };
+        let response = warp::test::request()
+            .method("POST")
+            .json(&body)
+            .filter(&filter)
+            .await
+            .unwrap();
+        // let x = String::from_utf8(response.body().to_vec()).unwrap();
+        // println!("{}", x);
+
+        let response_json: GQLResponse<GQLSignupRes> =
+            serde_json::from_slice(response.body()).unwrap();
+        assert!(response_json.data.is_none());
+        assert!(response_json.errors.is_some());
+
+        let errors = response_json.errors.unwrap();
+        assert_eq!(
+            errors[0].message,
+            "User with email `test2@test.com` already exists"
+        );
+
         // signout - success
         // signin - success
         // signin - failure - email doesn't exist

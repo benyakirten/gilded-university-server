@@ -2,6 +2,7 @@ use migration::DbErr;
 use sea_orm::{DeleteResult, EntityTrait};
 use serde::{Deserialize, Serialize};
 
+use super::GQLResponse;
 use crate::common::connect_to_test_database;
 use entity::user;
 
@@ -12,19 +13,13 @@ pub mod user_query;
 #[allow(dead_code)]
 pub async fn delete_all_users() -> Result<DeleteResult, DbErr> {
     let conn = connect_to_test_database().await;
-    let res = user::Entity::delete_many().exec(&conn).await?;
-    Ok(res)
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct GQLUserResponse<T: Serialize> {
-    pub data: T,
+    user::Entity::delete_many().exec(&conn).await
 }
 
 #[allow(dead_code)]
-pub type GQLUsersRes = GQLUserResponse<GQLUsers>;
+pub type GQLUsersRes = GQLResponse<GQLUsers>;
 #[allow(dead_code)]
-pub type GQLUserRes = GQLUserResponse<GQLUser>;
+pub type GQLUserRes = GQLResponse<GQLUser>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GQLUsers {
@@ -46,11 +41,11 @@ pub struct GQLUserModel {
 }
 
 #[allow(dead_code)]
-type GQLSignupRes = GQLUserResponse<GQLSignupResponse>;
+type GQLSignupRes = GQLResponse<GQLSignupResponse>;
 #[allow(dead_code)]
-type GQLSigninRes = GQLUserResponse<GQLSigninResponse>;
+type GQLSigninRes = GQLResponse<GQLSigninResponse>;
 #[allow(dead_code)]
-type GQLSignoutRes = GQLUserResponse<GQLSignoutResponse>;
+type GQLSignoutRes = GQLResponse<GQLSignoutResponse>;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GQLSigninResponse {

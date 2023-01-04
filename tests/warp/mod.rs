@@ -8,25 +8,23 @@ pub struct GQLRequest<T> {
     variables: Option<T>,
 }
 
-#[allow(dead_code)]
-type GQLErrorResponse = GQLRequest<GQLError>;
-
 #[derive(Serialize, Deserialize, Debug)]
-pub struct GQLErrors {
-    errors: Vec<GQLError>,
-    path: Vec<String>,
+pub struct GQLResponse<T: Serialize> {
+    pub data: Option<T>,
+    pub errors: Option<Vec<GQLError>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GQLError {
-    message: String,
-    locations: Vec<GQLErrorLocation>,
+    pub message: String,
+    pub locations: Vec<GQLErrorLocation>,
+    pub path: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GQLErrorLocation {
-    line: usize,
-    column: usize,
+    pub line: usize,
+    pub column: usize,
 }
 
 // {
