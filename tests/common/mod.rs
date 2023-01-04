@@ -43,5 +43,7 @@ pub async fn delete_records(conn: &DatabaseConnection) -> Result<(), DbErr> {
 }
 
 pub async fn connect_to_test_database() -> DatabaseConnection {
-    connect_to_database("TEST_DATABASE_URL").await.unwrap()
+    let conn = connect_to_database("TEST_DATABASE_URL").await.unwrap();
+    delete_records(&conn).await.unwrap();
+    conn
 }
