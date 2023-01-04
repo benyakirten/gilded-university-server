@@ -1,3 +1,6 @@
+![Unit Tests](https://github.com/benyakirten/gilded-university-server/actions/workflows/fmt_test_lint.yml/badge.svg)
+![Integration Tests](https://github.com/benyakirten/gilded-university-server/actions/workflows/integration_tests.yml/badge.svg)
+
 # What is this?
 
 It's a backend for the Gilded University app (maybe frontend too). It uses Diesel with a Postgres database and graphql.

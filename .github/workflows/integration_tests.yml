@@ -36,6 +36,7 @@ jobs:
         uses: actions-rs/cargo@v1
         env:
           TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/gutests
+          JWT_SECRET: jwtsecret
         with:
           command: test
           args: integration_ -- --test-threads 1
