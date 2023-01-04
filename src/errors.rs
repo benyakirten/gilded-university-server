@@ -2,8 +2,10 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum UserError {
-    #[error("No user with email `{0}`")]
-    NoUserByEmail(String),
+    #[error("Incorrect email or password")]
+    IncorrectEmailOrPassword,
+    #[error("Unable to complete request")]
+    UnableToComplete,
     #[error("User with email `{0}` already exists")]
     UserWithEmailAlreadyExists(String),
 }

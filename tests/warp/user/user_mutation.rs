@@ -6,7 +6,7 @@ mod integration_warp_user_mutation {
     use crate::{
         common::make_graphql_filter,
         warp::{
-            user::{delete_all_users, get_all_users, GQLSignoutRes, GQLSignupRes},
+            user::{delete_all_users, get_all_users, GQLSigninRes, GQLSignoutRes, GQLSignupRes},
             GQLRequest, GQLResponse,
         },
     };
@@ -22,7 +22,7 @@ mod integration_warp_user_mutation {
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
             mutation {
-                signup(email: "test@test.com", name:"test user", password:"abc123") {
+                signup(email: "test@test.com", name:"test user", password:"testpassword") {
                     token  
                 }
             }"#
@@ -46,31 +46,7 @@ mod integration_warp_user_mutation {
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
             mutation {
-                signup(email: "test2@test.com", name:"test user2", password:"abc123") {
-                    token  
-                }
-            }"#
-            .to_string(),
-            variables: None,
-        };
-        let response = warp::test::request()
-            .method("POST")
-            .json(&body)
-            .filter(&filter)
-            .await
-            .unwrap();
-
-        let response_json: GQLSignupRes = serde_json::from_slice(response.body()).unwrap();
-        assert!(response_json.data.is_some());
-        assert!(response_json.errors.is_none());
-
-        let data = response_json.data.unwrap();
-        assert!(!data.signup.token.is_empty());
-
-        let body: GQLRequest<()> = GQLRequest {
-            query: r#"
-            mutation {
-                signup(email: "test2@test.com", name:"test user2", password:"abc123") {
+                signup(email: "test@test.com", name:"test user2", password:"testpassword") {
                     token  
                 }
             }"#
@@ -90,30 +66,22 @@ mod integration_warp_user_mutation {
         assert!(response_json.errors.is_some());
 
         let errors = response_json.errors.unwrap();
-        assert_eq!(
-            errors[0].message,
-            "User with email `test2@test.com` already exists"
-        );
+        assert_eq!(errors[0].message, "Unable to complete request");
+        assert_eq!(errors[0].path[0], "signup");
 
         let users = get_all_users().await.unwrap();
         let user1 = &users[0];
-        let user2 = &users[1];
 
         assert_eq!(user1.email, "test@test.com");
         assert_eq!(user1.name, "test user");
         assert_eq!(user1.role, Role::Guest);
         assert_eq!(user1.status, Status::Online);
 
-        assert_eq!(user2.email, "test2@test.com");
-        assert_eq!(user2.name, "test user2");
-        assert_eq!(user2.role, Role::Guest);
-        assert_eq!(user2.status, Status::Online);
-
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
             mutation {
-                signout(email: "test2@test.com") {
-                    token  
+                signout(email: "test@test.com") {
+                    success  
                 }
             }"#
             .to_string(),
@@ -133,14 +101,96 @@ mod integration_warp_user_mutation {
         let data = response_json.data.unwrap();
         assert!(data.signout.success);
 
-        // signout - success
-        // signin - success
-        // signin - failure - email doesn't exist
-        // signin - failure - password incorrect
-        // signout - failure - email doesn't exist
-        delete_all_users().await.unwrap();
+        let users = get_all_users().await.unwrap();
+        let user1 = &users[0];
 
-        // let x = String::from_utf8(response.body().to_vec()).unwrap();
-        // println!("{}", x);
+        assert_eq!(user1.email, "test@test.com");
+        assert_eq!(user1.name, "test user");
+        assert_eq!(user1.role, Role::Guest);
+        assert_eq!(user1.status, Status::Offline);
+
+        let body: GQLRequest<()> = GQLRequest {
+            query: r#"
+            mutation {
+                signin(email: "test2@test.com", password: "testpassword") {
+                    token  
+                }
+            }"#
+            .to_string(),
+            variables: None,
+        };
+        let response = warp::test::request()
+            .method("POST")
+            .json(&body)
+            .filter(&filter)
+            .await
+            .unwrap();
+
+        let response_json: GQLSigninRes = serde_json::from_slice(response.body()).unwrap();
+        assert!(response_json.data.is_none());
+        assert!(response_json.errors.is_some());
+
+        let errors = response_json.errors.unwrap();
+        assert_eq!(errors[0].message, "Incorrect email or password");
+        assert_eq!(errors[0].path[0], "signin");
+
+        let body: GQLRequest<()> = GQLRequest {
+            query: r#"
+            mutation {
+                signin(email: "test@test.com", password: "nottherightpassword") {
+                    token  
+                }
+            }"#
+            .to_string(),
+            variables: None,
+        };
+        let response = warp::test::request()
+            .method("POST")
+            .json(&body)
+            .filter(&filter)
+            .await
+            .unwrap();
+
+        let response_json: GQLSigninRes = serde_json::from_slice(response.body()).unwrap();
+        assert!(response_json.data.is_none());
+        assert!(response_json.errors.is_some());
+
+        let errors = response_json.errors.unwrap();
+        assert_eq!(errors[0].message, "Incorrect email or password");
+        assert_eq!(errors[0].path[0], "signin");
+
+        let body: GQLRequest<()> = GQLRequest {
+            query: r#"
+            mutation {
+                signin(email: "test@test.com", password: "testpassword") {
+                    token  
+                }
+            }"#
+            .to_string(),
+            variables: None,
+        };
+        let response = warp::test::request()
+            .method("POST")
+            .json(&body)
+            .filter(&filter)
+            .await
+            .unwrap();
+
+        let response_json: GQLSigninRes = serde_json::from_slice(response.body()).unwrap();
+        assert!(response_json.data.is_some());
+        assert!(response_json.errors.is_none());
+
+        let data = response_json.data.unwrap();
+        assert!(!data.signin.token.is_empty());
+
+        let users = get_all_users().await.unwrap();
+        let user1 = &users[0];
+
+        assert_eq!(user1.email, "test@test.com");
+        assert_eq!(user1.name, "test user");
+        assert_eq!(user1.role, Role::Guest);
+        assert_eq!(user1.status, Status::Online);
+
+        delete_all_users().await.unwrap();
     }
 }

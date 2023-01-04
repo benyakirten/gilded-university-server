@@ -75,7 +75,7 @@ pub async fn signup(
     let conn = ctx.connection.as_ref();
     let existing = User::find_one_by_email(&email, conn).await?;
     if existing.is_some() {
-        return Err(UserError::UserWithEmailAlreadyExists(email).into());
+        return Err(UserError::UnableToComplete.into());
     }
 
     let pass = hash(&password)?;
@@ -92,7 +92,7 @@ pub async fn signin(ctx: &Context, email: String, password: String) -> FieldResu
     let found = User::find_one_by_email(&email, conn).await?;
     match found {
         Some(found) => {
-            verify(&password, &found.password)?;
+            verify(&password, &found.password).map_err(|_| UserError::IncorrectEmailOrPassword)?;
 
             let mut found: user::ActiveModel = found.into();
             found.status = Set(Status::Online.to_owned());
@@ -101,7 +101,7 @@ pub async fn signin(ctx: &Context, email: String, password: String) -> FieldResu
             let token = create_jwt(&found.id, &found.role)?;
             Ok(AuthResponse::new(&token))
         }
-        None => Err(UserError::NoUserByEmail(email).into()),
+        None => Err(UserError::IncorrectEmailOrPassword.into()),
     }
 }
 
@@ -119,6 +119,6 @@ pub async fn signout(ctx: &Context, email: String) -> FieldResult<SignoutRespons
 
             Ok(SignoutResponse::complete())
         }
-        None => Err(UserError::NoUserByEmail(email).into()),
+        None => Err(UserError::UnableToComplete.into()),
     }
 }
