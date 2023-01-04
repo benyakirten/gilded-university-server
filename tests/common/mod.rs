@@ -12,6 +12,7 @@ use gilded_university_server::{
 
 pub async fn make_graphql_filter() -> BoxedFilter<(Response<Vec<u8>>,)> {
     let connection = connect_to_test_database().await;
+    user::Entity::delete_many().exec(&connection).await.unwrap();
     let connection = Arc::new(connection);
     let state = warp::any()
         .and(warp::header::optional::<String>("Authorization"))

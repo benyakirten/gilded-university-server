@@ -21,11 +21,12 @@ mod integration_warp_user_mutation {
 
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
-            mutation {
-                signup(email: "test@test.com", name:"test user", password:"testpassword") {
-                    token  
+                mutation {
+                    signup(email: "test@test.com", name:"test user", password:"testpassword") {
+                        token  
+                    }
                 }
-            }"#
+            "#
             .to_string(),
             variables: None,
         };
@@ -45,11 +46,12 @@ mod integration_warp_user_mutation {
 
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
-            mutation {
-                signup(email: "test@test.com", name:"test user2", password:"testpassword") {
-                    token  
+                mutation {
+                    signup(email: "test@test.com", name:"test user2", password:"testpassword") {
+                        token  
+                    }
                 }
-            }"#
+            "#
             .to_string(),
             variables: None,
         };
@@ -79,11 +81,12 @@ mod integration_warp_user_mutation {
 
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
-            mutation {
-                signout(email: "test@test.com") {
-                    success  
+                mutation {
+                    signout(email: "test@test.com") {
+                        success  
+                    }
                 }
-            }"#
+            "#
             .to_string(),
             variables: None,
         };
@@ -111,11 +114,12 @@ mod integration_warp_user_mutation {
 
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
-            mutation {
-                signin(email: "test2@test.com", password: "testpassword") {
-                    token  
+                mutation {
+                    signin(email: "test2@test.com", password: "testpassword") {
+                        token  
+                    }
                 }
-            }"#
+            "#
             .to_string(),
             variables: None,
         };
@@ -136,11 +140,12 @@ mod integration_warp_user_mutation {
 
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
-            mutation {
-                signin(email: "test@test.com", password: "nottherightpassword") {
-                    token  
+                mutation {
+                    signin(email: "test@test.com", password: "nottherightpassword") {
+                        token  
+                    }
                 }
-            }"#
+            "#
             .to_string(),
             variables: None,
         };
@@ -161,11 +166,12 @@ mod integration_warp_user_mutation {
 
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
-            mutation {
-                signin(email: "test@test.com", password: "testpassword") {
-                    token  
+                mutation {
+                    signin(email: "test@test.com", password: "testpassword") {
+                        token  
+                    }
                 }
-            }"#
+            "#
             .to_string(),
             variables: None,
         };

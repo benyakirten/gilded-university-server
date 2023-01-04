@@ -26,21 +26,3 @@ pub struct GQLErrorLocation {
     pub line: usize,
     pub column: usize,
 }
-
-// {
-//     "data":null,
-//     "errors": [
-//       {
-//         "message":"User with emai `test2@test.com` already exists",
-//         "locations": [
-//           {
-//             "line":3,
-//             "column":17
-//           }
-//         ],
-//       "path": [
-//         "signup"
-//       ]
-//       }
-//     ]
-//   }
