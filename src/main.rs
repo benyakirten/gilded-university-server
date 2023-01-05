@@ -36,12 +36,16 @@ async fn main() {
         });
     let graphql_filter = juniper_warp::make_graphql_filter(create_schema(), state.boxed());
 
+    let cors = warp::cors()
+        .allow_any_origin()
+        .allow_headers(vec!["*"])
+        .allow_methods(vec!["POST", "OPTIONS", "GET", "DELETE"]);
     warp::serve(
         warp::get()
             .and(warp::path("graphiql"))
             .and(juniper_warp::graphiql_filter("/graphql", None))
             .or(redirect)
-            .or(warp::path("graphql").and(graphql_filter)),
+            .or(warp::path("graphql").and(graphql_filter).with(cors)),
     )
     .run(([127, 0, 0, 1], 8080))
     .await
