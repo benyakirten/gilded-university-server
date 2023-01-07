@@ -67,7 +67,7 @@ pub fn get_token_from_header(header: Option<String>) -> String {
 mod test {
     use std::env;
 
-    use crate::get_env;
+    use crate::{get_env, get_token_from_header};
     #[test]
     fn get_env_success() {
         env::remove_var("TEST_VALUE");
@@ -87,16 +87,31 @@ mod test {
     }
 
     #[test]
-    fn get_token_returns_empty_if_no_header() {}
+    fn get_token_returns_empty_if_no_header() {
+        let res = get_token_from_header(None);
+        assert_eq!(res, "");
+    }
 
     #[test]
-    fn get_token_returns_empty_if_header_is_empty_string() {}
+    fn get_token_returns_empty_if_header_is_empty_string() {
+        let res = get_token_from_header(Some("".to_string()));
+        assert_eq!(res, "");
+    }
     #[test]
-    fn get_token_returns_empty_if_first_word_not_bearer() {}
+    fn get_token_returns_empty_if_first_word_not_bearer() {
+        let res = get_token_from_header(Some("Hello abcdef".to_string()));
+        assert_eq!(res, "");
+    }
 
     #[test]
-    fn get_token_returns_empty_if_no_token() {}
+    fn get_token_returns_empty_if_no_token() {
+        let res = get_token_from_header(Some("Bearer".to_string()));
+        assert_eq!(res, "");
+    }
 
     #[test]
-    fn get_token_returns_token_otherwise() {}
+    fn get_token_returns_token_otherwise() {
+        let res = get_token_from_header(Some("Bearer abcdef".to_string()));
+        assert_eq!(res, "abcdef");
+    }
 }
