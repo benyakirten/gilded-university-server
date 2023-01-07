@@ -19,6 +19,10 @@ impl Time {
             None => Err(TimeError::CalculationError(duration.as_secs())),
         }
     }
+
+    pub fn hour_hence() -> Result<Duration, TimeError> {
+        Self::now_plus_duration(Duration::from_secs(3600))
+    }
 }
 
 #[cfg(test)]
@@ -49,6 +53,17 @@ mod tests {
         let got = Time::now_plus_duration(Duration::from_secs(60))
             .unwrap()
             .as_secs();
+        assert_eq!(got, want);
+    }
+
+    #[test]
+    fn now_plus_hour_correct() {
+        let got = Time::hour_hence().unwrap();
+        let want = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .checked_add(Duration::from_secs(3600))
+            .unwrap();
         assert_eq!(got, want);
     }
 }

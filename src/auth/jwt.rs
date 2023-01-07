@@ -122,23 +122,11 @@ mod test_authorize {
     use std::time::Duration;
 
     use dotenvy::dotenv;
-    use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
     use sea_orm::prelude::Uuid;
 
-    use super::{authorize, Claims};
-    use crate::time::Time;
+    use super::authorize;
+    use crate::{testutils::create_test_jwt, time::Time};
     use entity::sea_orm_active_enums::Role;
-
-    fn create_test_jwt(id: &Uuid, role: &Role, time: u64) -> String {
-        let secret = "jwtsecret".as_bytes();
-        let claims = Claims {
-            sub: id.to_owned(),
-            role: role.to_str(),
-            exp: time,
-        };
-        let header = Header::new(Algorithm::HS512);
-        encode(&header, &claims, &EncodingKey::from_secret(secret)).unwrap()
-    }
 
     #[test]
     fn authorization_success() {
@@ -211,10 +199,44 @@ mod test_authorize {
     }
 }
 
-// #[cfg(test)]
-// mod test_claims_from_token {
+#[cfg(test)]
+mod test_claims_from_token {
+    use std::env;
 
-// }
+    use dotenvy::dotenv;
+    use entity::sea_orm_active_enums::Role;
+    use sea_orm::prelude::Uuid;
+
+    use crate::{testutils::create_test_jwt, time::Time};
+
+    use super::get_claims_from_token;
+
+    #[test]
+    fn fail_on_false_token() {
+        let res = get_claims_from_token("abcabcabc");
+        assert!(res.is_err());
+
+        let err = res.err().unwrap();
+        assert_eq!(err.to_string(), "Unable to decode JWT: InvalidToken")
+    }
+
+    #[test]
+    fn succeed_on_valid_token() {
+        dotenv().ok();
+        env::set_var("JWT_SECRET", "jwtsecret");
+        let id = Uuid::new_v4();
+        let now_plus_hour = Time::hour_hence().unwrap().as_secs();
+        let token = create_test_jwt(&id, &Role::Admin, now_plus_hour);
+
+        let res = get_claims_from_token(&token);
+        assert!(res.is_ok());
+
+        let claims = res.ok().unwrap();
+        assert_eq!(claims.role, "Admin");
+        assert_eq!(claims.sub, id);
+        assert_eq!(claims.exp, now_plus_hour);
+    }
+}
 
 #[cfg(test)]
 mod test_claims {
