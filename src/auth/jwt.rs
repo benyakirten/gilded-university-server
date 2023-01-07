@@ -25,24 +25,29 @@ pub fn create_jwt(uid: &Uuid, role: &Role) -> Result<String, AuthorizationError>
 
 #[allow(dead_code)]
 pub fn authorize(role: &Role, token: &str) -> Result<Uuid, AuthorizationError> {
-    let decoded = decode::<Claims>(
-        token,
-        &DecodingKey::from_secret(get_env("JWT_SECRET").as_bytes()),
-        &Validation::new(Algorithm::HS512),
-    )
-    .map_err(|e| AuthorizationError::DecodingError(e.to_string()))?;
+    let claims = get_claims_from_token(token)?;
+    claims.expired()?;
 
-    // Check if token has expired
-    decoded.claims.expired()?;
-
-    let decoded_role = Role::from_str(&decoded.claims.role).unwrap_or(Role::Guest);
+    let decoded_role = Role::from_str(&claims.role).unwrap_or(Role::Guest);
     match decoded_role.meets_requirements(role) {
-        true => Ok(decoded.claims.sub),
+        true => Ok(claims.sub),
         false => Err(AuthorizationError::InsufficientPermission {
             required: role.to_str(),
             permission: decoded_role.to_str(),
         }),
     }
+}
+
+pub fn get_claims_from_token(token: &str) -> Result<Claims, AuthorizationError> {
+    let claims = decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(get_env("JWT_SECRET").as_bytes()),
+        &Validation::new(Algorithm::HS512),
+    )
+    .map_err(|e| AuthorizationError::DecodingError(e.to_string()))
+    .map(|decoded| decoded.claims)?;
+
+    Ok(claims)
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -205,6 +210,11 @@ mod test_authorize {
         assert_eq!(err, "Unable to decode JWT: ExpiredSignature");
     }
 }
+
+// #[cfg(test)]
+// mod test_claims_from_token {
+
+// }
 
 #[cfg(test)]
 mod test_claims {

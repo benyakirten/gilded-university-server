@@ -5,10 +5,10 @@ use super::MutationRoot;
 use crate::{
     auth::{
         hash::{hash, verify},
-        jwt::create_jwt,
+        jwt::{create_jwt, get_claims_from_token},
     },
     errors::UserError,
-    graphql::schema::Context,
+    graphql::{schema::Context, user::GQLUser},
 };
 use entity::{
     prelude::User,
@@ -20,12 +20,14 @@ use entity::{
 pub struct AuthResponse {
     // TODO: Add refresh token
     pub token: String,
+    pub user: GQLUser,
 }
 
 impl AuthResponse {
-    pub fn new(token: &str) -> Self {
+    pub fn new(token: &str, user: GQLUser) -> Self {
         AuthResponse {
             token: token.to_string(),
+            user,
         }
     }
 }
@@ -80,11 +82,14 @@ pub async fn signup(
 
     let pass = hash(&password)?;
     let new_user = User::create_active_model(&email, &name, &pass);
-    let res = User::insert_one(new_user, conn).await?;
+    let res = User::insert_one(new_user.clone(), conn).await?;
 
     let id = res.last_insert_id;
     let token = create_jwt(&id, &Role::Guest)?;
-    Ok(AuthResponse::new(&token))
+
+    let user = GQLUser::from_active_model(new_user);
+
+    Ok(AuthResponse::new(&token, user))
 }
 
 pub async fn signin(ctx: &Context, email: String, password: String) -> FieldResult<AuthResponse> {
@@ -99,7 +104,8 @@ pub async fn signin(ctx: &Context, email: String, password: String) -> FieldResu
             let found: user::Model = User::update_one(found, conn).await?;
 
             let token = create_jwt(&found.id, &found.role)?;
-            Ok(AuthResponse::new(&token))
+            let user = GQLUser::single(&found);
+            Ok(AuthResponse::new(&token, user))
         }
         None => Err(UserError::IncorrectEmailOrPassword.into()),
     }
@@ -109,10 +115,13 @@ pub async fn signout(ctx: &Context, email: String) -> FieldResult<SignoutRespons
     let conn = ctx.connection.as_ref();
     let found = User::find_one_by_email(&email, conn).await?;
 
-    // TODO: Verify token is from user that is trying to log out
-
     match found {
         Some(found) => {
+            let claims = get_claims_from_token(&ctx.token)?;
+            if found.id != claims.sub {
+                return Err(UserError::UnableToComplete.into());
+            }
+
             let mut found: user::ActiveModel = found.into();
             found.status = Set(Status::Offline.to_owned());
             User::update_one(found, conn).await?;
