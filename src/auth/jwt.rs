@@ -26,7 +26,6 @@ pub fn create_jwt(uid: &Uuid, role: &Role) -> Result<String, AuthorizationError>
 #[allow(dead_code)]
 pub fn authorize(role: &Role, token: &str) -> Result<Uuid, AuthorizationError> {
     let claims = get_claims_from_token(token)?;
-    claims.expired()?;
 
     let decoded_role = Role::from_str(&claims.role).unwrap_or(Role::Guest);
     match decoded_role.meets_requirements(role) {

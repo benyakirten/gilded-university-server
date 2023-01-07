@@ -90,6 +90,7 @@ pub struct GQLSignupResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GQLAuthResponse {
     pub token: String,
+    pub user: GQLUserModel,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

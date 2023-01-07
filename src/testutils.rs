@@ -48,3 +48,9 @@ pub fn create_test_jwt(id: &Uuid, role: &Role, time: u64) -> String {
     let header = Header::new(Algorithm::HS512);
     encode(&header, &claims, &EncodingKey::from_secret(secret)).unwrap()
 }
+
+#[allow(dead_code)]
+pub fn print_response_body(body: &Vec<u8>) {
+    let str = String::from_utf8(body.to_vec()).unwrap();
+    println!("{}", str);
+}

@@ -117,6 +117,7 @@ pub async fn signout(ctx: &Context, email: String) -> FieldResult<SignoutRespons
 
     match found {
         Some(found) => {
+            // `get_claims_From_token` is not happy
             let claims = get_claims_from_token(&ctx.token)?;
             if found.id != claims.sub {
                 return Err(UserError::UnableToComplete.into());
