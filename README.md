@@ -1,5 +1,6 @@
-![Unit Tests](https://github.com/benyakirten/gilded-university-server/actions/workflows/fmt_test_lint.yml/badge.svg)
-![Integration Tests](https://github.com/benyakirten/gilded-university-server/actions/workflows/integration_tests.yml/badge.svg)
+![Lint](https://github.com/benyakirten/gilded-university-server/actions/workflows/lint.yml/badge.svg)
+![Unit Tests](https://github.com/benyakirten/gilded-university-server/actions/workflows/unit_test.yml/badge.svg)
+![Integration Tests](https://github.com/benyakirten/gilded-university-server/actions/workflows/integration_test.yml/badge.svg)
 
 # What is this?
 

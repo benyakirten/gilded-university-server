@@ -1,7 +1,6 @@
 use std::{env, sync::Arc};
 
 use dotenvy::dotenv;
-use env_logger;
 use warp::{http::Method, hyper::Uri, Filter};
 
 use gilded_university_server::{
