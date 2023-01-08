@@ -2,10 +2,7 @@
 mod integration_warp_user_mutation {
     use dotenvy::dotenv;
     use entity::sea_orm_active_enums::{Role, Status};
-    use gilded_university_server::{
-        testutils::{create_test_jwt, print_response_body},
-        time::Time,
-    };
+    use gilded_university_server::{testutils::create_test_jwt, time::Time};
     use sea_orm::prelude::Uuid;
 
     use crate::{
@@ -287,7 +284,6 @@ mod integration_warp_user_mutation {
             .await
             .unwrap();
 
-        print_response_body(response.body());
         let response_json: GQLSigninRes = serde_json::from_slice(response.body()).unwrap();
         assert!(response_json.data.is_some());
         assert!(response_json.errors.is_none());
@@ -307,6 +303,39 @@ mod integration_warp_user_mutation {
         assert_eq!(user1.name, "test user");
         assert_eq!(user1.role, Role::Guest);
         assert_eq!(user1.status, Status::Online);
+
+        let body: GQLRequest<()> = GQLRequest {
+            query: r#"
+                mutation {
+                    signin(email: "test@test.com", password: "testpassword") {
+                        token
+                        user {
+                            id
+                            email
+                            name
+                            role
+                            status
+                        }
+                    }
+                }
+            "#
+            .to_string(),
+            variables: None,
+        };
+        let response = warp::test::request()
+            .method("POST")
+            .json(&body)
+            .filter(&filter)
+            .await
+            .unwrap();
+
+        let response_json: GQLSigninRes = serde_json::from_slice(response.body()).unwrap();
+        assert!(response_json.data.is_none());
+        assert!(response_json.errors.is_some());
+
+        let errors = response_json.errors.unwrap();
+        assert_eq!(errors[0].message, "Unable to complete request");
+        assert_eq!(errors[0].path[0], "signin");
 
         delete_all_users().await.unwrap();
     }

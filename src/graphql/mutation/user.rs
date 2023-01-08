@@ -97,6 +97,9 @@ pub async fn signin(ctx: &Context, email: String, password: String) -> FieldResu
     let found = User::find_one_by_email(&email, conn).await?;
     match found {
         Some(found) => {
+            if found.status != Status::Offline {
+                return Err(UserError::UnableToComplete.into());
+            }
             verify(&password, &found.password).map_err(|_| UserError::IncorrectEmailOrPassword)?;
 
             let mut found: user::ActiveModel = found.into();
