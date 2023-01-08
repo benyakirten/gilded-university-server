@@ -2,6 +2,8 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use crate::errors::TimeError;
 
+pub const HOUR_IN_SECONDS: u16 = 3600;
+
 pub struct Time {}
 
 impl Time {
@@ -21,13 +23,15 @@ impl Time {
     }
 
     pub fn hour_hence() -> Result<Duration, TimeError> {
-        Self::now_plus_duration(Duration::from_secs(3600))
+        Self::now_plus_duration(Duration::from_secs(HOUR_IN_SECONDS.into()))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+    use crate::time::HOUR_IN_SECONDS;
 
     use super::Time;
     #[test]
@@ -62,7 +66,7 @@ mod tests {
         let want = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
-            .checked_add(Duration::from_secs(3600))
+            .checked_add(Duration::from_secs(HOUR_IN_SECONDS.into()))
             .unwrap();
         assert_eq!(got, want);
     }

@@ -7,7 +7,7 @@ use crate::{
         hash::{hash, verify},
         jwt::{create_jwt, get_claims_from_token},
     },
-    errors::UserError,
+    errors::{AuthorizationError, UserError},
     graphql::{schema::Context, user::GQLUser},
 };
 use entity::{
@@ -112,12 +112,14 @@ pub async fn signin(ctx: &Context, email: String, password: String) -> FieldResu
 }
 
 pub async fn signout(ctx: &Context, email: String) -> FieldResult<SignoutResponse> {
+    if ctx.token.is_empty() {
+        return Err(AuthorizationError::TokenMissing.into());
+    }
     let conn = ctx.connection.as_ref();
     let found = User::find_one_by_email(&email, conn).await?;
 
     match found {
         Some(found) => {
-            // `get_claims_From_token` is not happy
             let claims = get_claims_from_token(&ctx.token)?;
             if found.id != claims.sub {
                 return Err(UserError::UnableToComplete.into());

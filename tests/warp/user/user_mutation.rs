@@ -2,7 +2,10 @@
 mod integration_warp_user_mutation {
     use dotenvy::dotenv;
     use entity::sea_orm_active_enums::{Role, Status};
-    use gilded_university_server::{testutils::create_test_jwt, time::Time};
+    use gilded_university_server::{
+        testutils::{create_test_jwt, print_response_body},
+        time::Time,
+    };
     use sea_orm::prelude::Uuid;
 
     use crate::{
@@ -100,13 +103,6 @@ mod integration_warp_user_mutation {
                 mutation {
                     signout(email: "test@test.com") {
                         success
-                        user {
-                            id
-                            email
-                            name
-                            role
-                            status
-                        }
                     }
                 }
             "#
@@ -125,7 +121,7 @@ mod integration_warp_user_mutation {
         assert!(response_json.data.is_none());
 
         let errors = response_json.errors.unwrap();
-        assert_eq!(errors[0].message, "Unable to complete request");
+        assert_eq!(errors[0].message, "Token missing");
         assert_eq!(errors[0].path[0], "signout");
 
         let body: GQLRequest<()> = GQLRequest {
@@ -154,8 +150,8 @@ mod integration_warp_user_mutation {
             .unwrap();
 
         let response_json: GQLSignoutRes = serde_json::from_slice(response.body()).unwrap();
-        assert!(response_json.errors.is_none());
-        assert!(response_json.data.is_some());
+        assert!(response_json.errors.is_some());
+        assert!(response_json.data.is_none());
 
         let errors = response_json.errors.unwrap();
         assert_eq!(errors[0].message, "Unable to complete request");
@@ -204,7 +200,14 @@ mod integration_warp_user_mutation {
             query: r#"
                 mutation {
                     signin(email: "test2@test.com", password: "testpassword") {
-                        token  
+                        token
+                        user {
+                            id
+                            email
+                            name
+                            role
+                            status
+                        } 
                     }
                 }
             "#
@@ -230,7 +233,14 @@ mod integration_warp_user_mutation {
             query: r#"
                 mutation {
                     signin(email: "test@test.com", password: "nottherightpassword") {
-                        token  
+                        token
+                        user {
+                            id
+                            email
+                            name
+                            role
+                            status
+                        }
                     }
                 }
             "#
@@ -256,7 +266,14 @@ mod integration_warp_user_mutation {
             query: r#"
                 mutation {
                     signin(email: "test@test.com", password: "testpassword") {
-                        token  
+                        token
+                        user {
+                            id
+                            email
+                            name
+                            role
+                            status
+                        }
                     }
                 }
             "#
@@ -270,12 +287,18 @@ mod integration_warp_user_mutation {
             .await
             .unwrap();
 
+        print_response_body(response.body());
         let response_json: GQLSigninRes = serde_json::from_slice(response.body()).unwrap();
         assert!(response_json.data.is_some());
         assert!(response_json.errors.is_none());
 
         let data = response_json.data.unwrap();
         assert!(!data.signin.token.is_empty());
+
+        assert_eq!(data.signin.user.email, "test@test.com");
+        assert_eq!(data.signin.user.name, "test user");
+        assert_eq!(data.signin.user.role, "GUEST");
+        assert_eq!(data.signin.user.status, "ONLINE");
 
         let users = get_all_users().await.unwrap();
         let user1 = &users[0];

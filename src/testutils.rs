@@ -3,7 +3,7 @@ use std::sync::Arc;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use sea_orm::{prelude::Uuid, DatabaseBackend, DatabaseConnection, MockDatabase, ModelTrait};
 
-use crate::{auth::jwt::Claims, graphql::schema::Context};
+use crate::{auth::jwt::Claims, get_env, graphql::schema::Context};
 use entity::sea_orm_active_enums::Role;
 use migration::DbErr;
 
@@ -39,7 +39,8 @@ pub fn create_errored_context(results: Vec<DbErr>, token: Option<String>) -> Con
 
 #[allow(dead_code)]
 pub fn create_test_jwt(id: &Uuid, role: &Role, time: u64) -> String {
-    let secret = "jwtsecret".as_bytes();
+    let val = get_env("JWT_SECRET");
+    let secret = val.as_bytes();
     let claims = Claims {
         sub: id.to_owned(),
         role: role.to_str(),
@@ -50,7 +51,7 @@ pub fn create_test_jwt(id: &Uuid, role: &Role, time: u64) -> String {
 }
 
 #[allow(dead_code)]
-pub fn print_response_body(body: &Vec<u8>) {
+pub fn print_response_body(body: &[u8]) {
     let str = String::from_utf8(body.to_vec()).unwrap();
     println!("{}", str);
 }

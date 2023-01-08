@@ -58,6 +58,11 @@ mod integration_warp_user_integration {
         let data = response_json.data.unwrap();
         assert!(!data.signup.token.is_empty());
 
+        assert_eq!(data.signup.user.email, "test@test.com");
+        assert_eq!(data.signup.user.name, "test user");
+        assert_eq!(data.signup.user.role, "GUEST");
+        assert_eq!(data.signup.user.status, "ONLINE");
+
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
                 mutation {
@@ -124,6 +129,11 @@ mod integration_warp_user_integration {
         let data = response_json.data.unwrap();
         assert!(!data.signup.token.is_empty());
 
+        assert_eq!(data.signup.user.email, "test2@test.com");
+        assert_eq!(data.signup.user.name, "test user2");
+        assert_eq!(data.signup.user.role, "GUEST");
+        assert_eq!(data.signup.user.status, "ONLINE");
+
         let body: GQLRequest<()> = GQLRequest {
             query: r#"
                 query {
@@ -179,9 +189,11 @@ mod integration_warp_user_integration {
 
         let token = create_test_jwt(
             &Uuid::from_str(&user2.id).unwrap(),
-            &Role::Admin,
+            &Role::Guest,
             Time::hour_hence().unwrap().as_secs(),
         );
+
+        println!("{}", token);
 
         let response = warp::test::request()
             .method("POST")
@@ -266,7 +278,14 @@ mod integration_warp_user_integration {
             query: r#"
                 mutation {
                     signin(email: "test2@test.com", password: "testpassword") {
-                        token  
+                        token
+                        user {
+                            id
+                            email
+                            name
+                            role
+                            status
+                        }
                     }
                 }
             "#
@@ -286,6 +305,11 @@ mod integration_warp_user_integration {
 
         let data = response_json.data.unwrap();
         assert!(!data.signin.token.is_empty());
+
+        assert_eq!(data.signin.user.email, "test2@test.com");
+        assert_eq!(data.signin.user.name, "test user2");
+        assert_eq!(data.signin.user.role, "GUEST");
+        assert_eq!(data.signin.user.status, "ONLINE");
 
         let body: GQLRequest<()> = GQLRequest {
             query: format!(

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     errors::{AuthorizationError, TimeError},
     get_env,
-    time::Time,
+    time::{Time, HOUR_IN_SECONDS},
 };
 use entity::sea_orm_active_enums::Role;
 
@@ -16,7 +16,7 @@ pub fn create_jwt(uid: &Uuid, role: &Role) -> Result<String, AuthorizationError>
     let binding = get_env("JWT_SECRET");
     let secret = binding.as_bytes();
 
-    let claims = Claims::new(uid, role, Duration::from_secs(60 * 60))
+    let claims = Claims::new(uid, role, Duration::from_secs(HOUR_IN_SECONDS.into()))
         .map_err(|e| AuthorizationError::EncodingError(e.to_string()))?;
     let header = Header::new(Algorithm::HS512);
     encode(&header, &claims, &EncodingKey::from_secret(secret))
@@ -66,14 +66,6 @@ impl Claims {
         };
         Ok(claim)
     }
-
-    pub fn expired(&self) -> Result<(), AuthorizationError> {
-        let now = Time::now().map_err(|e| AuthorizationError::DecodingError(e.to_string()))?;
-        match self.exp.checked_sub(now.as_secs()) {
-            Some(time) if time > 0 => Ok(()),
-            _ => Err(AuthorizationError::TokenExpired),
-        }
-    }
 }
 
 #[cfg(test)]
@@ -85,6 +77,8 @@ mod test_create_jwt {
     use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
     use sea_orm::prelude::Uuid;
 
+    use crate::time::HOUR_IN_SECONDS;
+
     use super::{create_jwt, Claims};
     use entity::sea_orm_active_enums::Role;
 
@@ -94,7 +88,7 @@ mod test_create_jwt {
         env::set_var("JWT_SECRET", "jwtsecret");
         let id = Uuid::new_v4();
         let exp = SystemTime::now()
-            .checked_add(Duration::from_secs(60 * 60))
+            .checked_add(Duration::from_secs(HOUR_IN_SECONDS.into()))
             .unwrap()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -124,7 +118,10 @@ mod test_authorize {
     use sea_orm::prelude::Uuid;
 
     use super::authorize;
-    use crate::{testutils::create_test_jwt, time::Time};
+    use crate::{
+        testutils::create_test_jwt,
+        time::{Time, HOUR_IN_SECONDS},
+    };
     use entity::sea_orm_active_enums::Role;
 
     #[test]
@@ -135,7 +132,7 @@ mod test_authorize {
         let token = create_test_jwt(
             &id,
             &Role::Admin,
-            Time::now_plus_duration(Duration::from_secs(3600))
+            Time::now_plus_duration(Duration::from_secs(HOUR_IN_SECONDS.into()))
                 .unwrap()
                 .as_secs(),
         );
@@ -152,7 +149,7 @@ mod test_authorize {
         let token = create_test_jwt(
             &id,
             &Role::Student,
-            Time::now_plus_duration(Duration::from_secs(3600))
+            Time::now_plus_duration(Duration::from_secs(HOUR_IN_SECONDS.into()))
                 .unwrap()
                 .as_secs(),
         );
@@ -169,7 +166,7 @@ mod test_authorize {
         let token = create_test_jwt(
             &id,
             &Role::Guest,
-            Time::now_plus_duration(Duration::from_secs(3600))
+            Time::now_plus_duration(Duration::from_secs(HOUR_IN_SECONDS.into()))
                 .unwrap()
                 .as_secs(),
         );
@@ -244,12 +241,19 @@ mod test_claims {
     use entity::sea_orm_active_enums::Role;
     use sea_orm::prelude::Uuid;
 
+    use crate::time::HOUR_IN_SECONDS;
+
     use super::Claims;
 
     #[test]
     fn create_new_claim() {
         let id = Uuid::new_v4();
-        let got = Claims::new(&id, &Role::Teacher, Duration::from_secs(60 * 60)).unwrap();
+        let got = Claims::new(
+            &id,
+            &Role::Teacher,
+            Duration::from_secs(HOUR_IN_SECONDS.into()),
+        )
+        .unwrap();
 
         assert_eq!(
             got.exp,
@@ -261,20 +265,5 @@ mod test_claims {
         );
         assert_eq!(got.role, "Teacher");
         assert_eq!(got.sub, id);
-    }
-
-    #[test]
-    fn expired_returns_error_if_token_expired() {
-        let claims = Claims {
-            exp: 0,
-            role: "Student".to_string(),
-            sub: Uuid::new_v4(),
-        };
-
-        let res = claims.expired();
-        assert!(res.is_err());
-
-        let err = res.err().unwrap().to_string();
-        assert_eq!(err, "Token has expired")
     }
 }
