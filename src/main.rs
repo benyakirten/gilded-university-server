@@ -1,12 +1,9 @@
-use std::{env, sync::Arc};
+use std::env;
 
 use dotenvy::dotenv;
 use warp::{http::Method, hyper::Uri, Filter};
 
-use gilded_university_server::{
-    connect_to_database,
-    graphql::schema::{create_schema, Context},
-};
+use gilded_university_server::{connect_to_database, create_gql_filter};
 
 #[tokio::main]
 async fn main() {
@@ -24,25 +21,7 @@ async fn main() {
 
     println!("Connection established to database");
 
-    let connection = Arc::new(connection);
-    let state = warp::any()
-        .and(warp::header::optional::<String>("Authorization"))
-        .map(move |auth: Option<String>| -> Context {
-            let mut token = "".to_string();
-            if auth.is_some() {
-                let iter = &mut auth.into_iter();
-                if iter.next() == Some("Bearer".to_string()) {
-                    if let Some(_token) = iter.next() {
-                        token = _token;
-                    }
-                }
-            }
-            Context {
-                connection: connection.clone(),
-                token,
-            }
-        });
-    let graphql_filter = juniper_warp::make_graphql_filter(create_schema(), state.boxed());
+    let graphql_filter = create_gql_filter(connection);
 
     let cors = warp::cors()
         .allow_any_origin()

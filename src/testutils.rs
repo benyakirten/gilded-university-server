@@ -1,8 +1,10 @@
 use std::sync::Arc;
 
-use sea_orm::{DatabaseBackend, DatabaseConnection, MockDatabase, ModelTrait};
+use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
+use sea_orm::{prelude::Uuid, DatabaseBackend, DatabaseConnection, MockDatabase, ModelTrait};
 
-use crate::graphql::schema::Context;
+use crate::{auth::jwt::Claims, get_env, graphql::schema::Context};
+use entity::sea_orm_active_enums::Role;
 use migration::DbErr;
 
 #[allow(dead_code)]
@@ -33,4 +35,23 @@ pub fn create_errored_context(results: Vec<DbErr>, token: Option<String>) -> Con
     let token = token.unwrap_or_default();
     let connection = Arc::new(create_mock_errored_conn(results));
     Context { connection, token }
+}
+
+#[allow(dead_code)]
+pub fn create_test_jwt(id: &Uuid, role: &Role, time: u64) -> String {
+    let val = get_env("JWT_SECRET");
+    let secret = val.as_bytes();
+    let claims = Claims {
+        sub: id.to_owned(),
+        role: role.to_str(),
+        exp: time,
+    };
+    let header = Header::new(Algorithm::HS512);
+    encode(&header, &claims, &EncodingKey::from_secret(secret)).unwrap()
+}
+
+#[allow(dead_code)]
+pub fn print_response_body(body: &[u8]) {
+    let str = String::from_utf8(body.to_vec()).unwrap();
+    println!("{}", str);
 }

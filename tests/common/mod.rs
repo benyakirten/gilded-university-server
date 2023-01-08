@@ -1,37 +1,14 @@
-use std::sync::Arc;
-
 use migration::DbErr;
 use sea_orm::{DatabaseConnection, DeleteResult, EntityTrait};
-use warp::{filters::BoxedFilter, http::Response, Filter};
+use warp::{filters::BoxedFilter, http::Response};
 
 use entity::{prelude::User, user};
-use gilded_university_server::{
-    connect_to_database,
-    graphql::schema::{create_schema, Context},
-};
+use gilded_university_server::{connect_to_database, create_gql_filter};
 
 pub async fn make_graphql_filter() -> BoxedFilter<(Response<Vec<u8>>,)> {
     let connection = connect_to_test_database().await;
     user::Entity::delete_many().exec(&connection).await.unwrap();
-    let connection = Arc::new(connection);
-    let state = warp::any()
-        .and(warp::header::optional::<String>("Authorization"))
-        .map(move |auth: Option<String>| -> Context {
-            let mut token = "".to_string();
-            if auth.is_some() {
-                let iter = &mut auth.into_iter();
-                if iter.next() == Some("Bearer".to_string()) {
-                    if let Some(_token) = iter.next() {
-                        token = _token;
-                    }
-                }
-            }
-            Context {
-                connection: connection.clone(),
-                token,
-            }
-        });
-    juniper_warp::make_graphql_filter(create_schema(), state.boxed())
+    create_gql_filter(connection)
 }
 
 pub async fn delete_records(conn: &DatabaseConnection) -> Result<(), DbErr> {

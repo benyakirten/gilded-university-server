@@ -27,6 +27,8 @@ pub enum AuthorizationError {
     EncodingError(String),
     #[error("Token has expired")]
     TokenExpired,
+    #[error("Token missing")]
+    TokenMissing,
 }
 
 #[derive(Error, Debug)]

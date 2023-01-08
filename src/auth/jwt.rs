@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     errors::{AuthorizationError, TimeError},
     get_env,
-    time::Time,
+    time::{Time, HOUR_IN_SECONDS},
 };
 use entity::sea_orm_active_enums::Role;
 
@@ -16,7 +16,7 @@ pub fn create_jwt(uid: &Uuid, role: &Role) -> Result<String, AuthorizationError>
     let binding = get_env("JWT_SECRET");
     let secret = binding.as_bytes();
 
-    let claims = Claims::new(uid, role, Duration::from_secs(60 * 60))
+    let claims = Claims::new(uid, role, Duration::from_secs(HOUR_IN_SECONDS.into()))
         .map_err(|e| AuthorizationError::EncodingError(e.to_string()))?;
     let header = Header::new(Algorithm::HS512);
     encode(&header, &claims, &EncodingKey::from_secret(secret))
@@ -25,24 +25,28 @@ pub fn create_jwt(uid: &Uuid, role: &Role) -> Result<String, AuthorizationError>
 
 #[allow(dead_code)]
 pub fn authorize(role: &Role, token: &str) -> Result<Uuid, AuthorizationError> {
-    let decoded = decode::<Claims>(
-        token,
-        &DecodingKey::from_secret(get_env("JWT_SECRET").as_bytes()),
-        &Validation::new(Algorithm::HS512),
-    )
-    .map_err(|e| AuthorizationError::DecodingError(e.to_string()))?;
+    let claims = get_claims_from_token(token)?;
 
-    // Check if token has expired
-    decoded.claims.expired()?;
-
-    let decoded_role = Role::from_str(&decoded.claims.role).unwrap_or(Role::Guest);
+    let decoded_role = Role::from_str(&claims.role).unwrap_or(Role::Guest);
     match decoded_role.meets_requirements(role) {
-        true => Ok(decoded.claims.sub),
+        true => Ok(claims.sub),
         false => Err(AuthorizationError::InsufficientPermission {
             required: role.to_str(),
             permission: decoded_role.to_str(),
         }),
     }
+}
+
+pub fn get_claims_from_token(token: &str) -> Result<Claims, AuthorizationError> {
+    let claims = decode::<Claims>(
+        token,
+        &DecodingKey::from_secret(get_env("JWT_SECRET").as_bytes()),
+        &Validation::new(Algorithm::HS512),
+    )
+    .map_err(|e| AuthorizationError::DecodingError(e.to_string()))
+    .map(|decoded| decoded.claims)?;
+
+    Ok(claims)
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -62,14 +66,6 @@ impl Claims {
         };
         Ok(claim)
     }
-
-    pub fn expired(&self) -> Result<(), AuthorizationError> {
-        let now = Time::now().map_err(|e| AuthorizationError::DecodingError(e.to_string()))?;
-        match self.exp.checked_sub(now.as_secs()) {
-            Some(time) if time > 0 => Ok(()),
-            _ => Err(AuthorizationError::TokenExpired),
-        }
-    }
 }
 
 #[cfg(test)]
@@ -81,6 +77,8 @@ mod test_create_jwt {
     use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
     use sea_orm::prelude::Uuid;
 
+    use crate::time::HOUR_IN_SECONDS;
+
     use super::{create_jwt, Claims};
     use entity::sea_orm_active_enums::Role;
 
@@ -90,7 +88,7 @@ mod test_create_jwt {
         env::set_var("JWT_SECRET", "jwtsecret");
         let id = Uuid::new_v4();
         let exp = SystemTime::now()
-            .checked_add(Duration::from_secs(60 * 60))
+            .checked_add(Duration::from_secs(HOUR_IN_SECONDS.into()))
             .unwrap()
             .duration_since(UNIX_EPOCH)
             .unwrap()
@@ -117,23 +115,14 @@ mod test_authorize {
     use std::time::Duration;
 
     use dotenvy::dotenv;
-    use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
     use sea_orm::prelude::Uuid;
 
-    use super::{authorize, Claims};
-    use crate::time::Time;
+    use super::authorize;
+    use crate::{
+        testutils::create_test_jwt,
+        time::{Time, HOUR_IN_SECONDS},
+    };
     use entity::sea_orm_active_enums::Role;
-
-    fn create_test_jwt(id: &Uuid, role: &Role, time: u64) -> String {
-        let secret = "jwtsecret".as_bytes();
-        let claims = Claims {
-            sub: id.to_owned(),
-            role: role.to_str(),
-            exp: time,
-        };
-        let header = Header::new(Algorithm::HS512);
-        encode(&header, &claims, &EncodingKey::from_secret(secret)).unwrap()
-    }
 
     #[test]
     fn authorization_success() {
@@ -143,7 +132,7 @@ mod test_authorize {
         let token = create_test_jwt(
             &id,
             &Role::Admin,
-            Time::now_plus_duration(Duration::from_secs(3600))
+            Time::now_plus_duration(Duration::from_secs(HOUR_IN_SECONDS.into()))
                 .unwrap()
                 .as_secs(),
         );
@@ -160,7 +149,7 @@ mod test_authorize {
         let token = create_test_jwt(
             &id,
             &Role::Student,
-            Time::now_plus_duration(Duration::from_secs(3600))
+            Time::now_plus_duration(Duration::from_secs(HOUR_IN_SECONDS.into()))
                 .unwrap()
                 .as_secs(),
         );
@@ -177,7 +166,7 @@ mod test_authorize {
         let token = create_test_jwt(
             &id,
             &Role::Guest,
-            Time::now_plus_duration(Duration::from_secs(3600))
+            Time::now_plus_duration(Duration::from_secs(HOUR_IN_SECONDS.into()))
                 .unwrap()
                 .as_secs(),
         );
@@ -207,18 +196,64 @@ mod test_authorize {
 }
 
 #[cfg(test)]
+mod test_claims_from_token {
+    use std::env;
+
+    use dotenvy::dotenv;
+    use entity::sea_orm_active_enums::Role;
+    use sea_orm::prelude::Uuid;
+
+    use crate::{testutils::create_test_jwt, time::Time};
+
+    use super::get_claims_from_token;
+
+    #[test]
+    fn fail_on_false_token() {
+        let res = get_claims_from_token("abcabcabc");
+        assert!(res.is_err());
+
+        let err = res.err().unwrap();
+        assert_eq!(err.to_string(), "Unable to decode JWT: InvalidToken")
+    }
+
+    #[test]
+    fn succeed_on_valid_token() {
+        dotenv().ok();
+        env::set_var("JWT_SECRET", "jwtsecret");
+        let id = Uuid::new_v4();
+        let now_plus_hour = Time::hour_hence().unwrap().as_secs();
+        let token = create_test_jwt(&id, &Role::Admin, now_plus_hour);
+
+        let res = get_claims_from_token(&token);
+        assert!(res.is_ok());
+
+        let claims = res.ok().unwrap();
+        assert_eq!(claims.role, "Admin");
+        assert_eq!(claims.sub, id);
+        assert_eq!(claims.exp, now_plus_hour);
+    }
+}
+
+#[cfg(test)]
 mod test_claims {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     use entity::sea_orm_active_enums::Role;
     use sea_orm::prelude::Uuid;
 
+    use crate::time::HOUR_IN_SECONDS;
+
     use super::Claims;
 
     #[test]
     fn create_new_claim() {
         let id = Uuid::new_v4();
-        let got = Claims::new(&id, &Role::Teacher, Duration::from_secs(60 * 60)).unwrap();
+        let got = Claims::new(
+            &id,
+            &Role::Teacher,
+            Duration::from_secs(HOUR_IN_SECONDS.into()),
+        )
+        .unwrap();
 
         assert_eq!(
             got.exp,
@@ -230,20 +265,5 @@ mod test_claims {
         );
         assert_eq!(got.role, "Teacher");
         assert_eq!(got.sub, id);
-    }
-
-    #[test]
-    fn expired_returns_error_if_token_expired() {
-        let claims = Claims {
-            exp: 0,
-            role: "Student".to_string(),
-            sub: Uuid::new_v4(),
-        };
-
-        let res = claims.expired();
-        assert!(res.is_err());
-
-        let err = res.err().unwrap().to_string();
-        assert_eq!(err, "Token has expired")
     }
 }

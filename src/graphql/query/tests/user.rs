@@ -1,11 +1,12 @@
 #[cfg(test)]
 mod test_user_response {
-    use crate::graphql::query::user::UserResponse;
     use entity::{
         sea_orm_active_enums::{Role, Status},
         user as user_entity,
     };
     use sea_orm::prelude::Uuid;
+
+    use crate::graphql::user::GQLUser;
 
     #[test]
     fn create_single_model() {
@@ -18,7 +19,7 @@ mod test_user_response {
             role: Role::Student,
             status: Status::Hidden,
         };
-        let got = UserResponse::single(&model);
+        let got = GQLUser::single(&model);
         assert_eq!(got.email, "test@test.com");
         assert_eq!(got.id, id.to_string());
         assert_eq!(got.name, "test user");
@@ -41,7 +42,7 @@ mod test_user_response {
                 status: statuses[i % 3].clone(),
             })
             .collect();
-        let responses = UserResponse::multiple(models);
+        let responses = GQLUser::multiple(models);
 
         for i in 0..9 {
             let got = &responses[i];
