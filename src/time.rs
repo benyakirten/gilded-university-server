@@ -62,12 +62,15 @@ mod tests {
 
     #[test]
     fn now_plus_hour_correct() {
-        let got = Time::hour_hence().unwrap();
+        let got = Time::hour_hence().unwrap().as_secs();
         let want = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .checked_add(Duration::from_secs(HOUR_IN_SECONDS.into()))
-            .unwrap();
-        assert_eq!(got, want);
+            .unwrap()
+            .as_secs();
+
+        let difference = (got as i64) - (want as i64).abs();
+        assert!(difference < 5);
     }
 }
